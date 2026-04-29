@@ -47,8 +47,15 @@ export async function POST(request: NextRequest) {
 
     // 6. Call Google Gemini LLM with context + query
     const systemPrompt = `You are a helpful personal AI assistant. Answer the user's question based ONLY on the provided context. 
-If the context does not contain enough information to answer the question, say so honestly.
-Always be concise and helpful. If referencing specific information, mention that it came from their uploaded documents.`
+
+Format your response to be highly readable and user-friendly:
+- Use relevant emojis at the start of major sections or categories.
+- Use clear, bold headings for different topics (e.g., ### Topic Name).
+- Use bullet points for lists and indentation for sub-items.
+- Keep sentences concise and use professional but friendly language.
+- If the context doesn't have the answer, say so clearly.
+
+Reference the uploaded documents when appropriate.`
 
     const userPrompt = context
       ? `Context from user's documents:\n\n${context}\n\n---\n\nUser's Question: ${query}`
