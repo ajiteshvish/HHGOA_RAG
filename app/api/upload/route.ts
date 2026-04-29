@@ -9,24 +9,15 @@ import path from 'path'
 async function extractText(buffer: Buffer, fileType: string): Promise<string> {
   switch (fileType) {
     case 'application/pdf': {
-      // Use the modern pdf-parse v2 API with a newer pdf.js engine
-      const pdfModule = await import('pdf-parse')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const PDFParse = pdfModule.PDFParse || (pdfModule as any).default?.PDFParse
+      // Import the worker module first to polyfill browser APIs like DOMMatrix in Node.js
+      const { CanvasFactory } = await import('pdf-parse/worker')
+      const { PDFParse } = await import('pdf-parse')
       
-      if (!PDFParse) {
-        throw new Error('PDFParse class not found in pdf-parse module')
-      }
-
-      const workerPath = path.resolve('node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs')
-      if (typeof (PDFParse as any).setWorker === 'function') {
-        (PDFParse as any).setWorker(workerPath)
-      }
-
       const parser = new PDFParse({ 
         data: buffer,
         disableWorker: true,
-        verbosity: 0
+        verbosity: 0,
+        CanvasFactory
       } as any)
       
       const result = await parser.getText()
