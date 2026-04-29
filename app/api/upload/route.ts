@@ -123,9 +123,13 @@ export async function POST(request: NextRequest) {
 
     if (chunkError) {
       console.error('Chunk insert error:', chunkError)
+      console.error('Error details:', JSON.stringify(chunkError, null, 2))
       // Cleanup the document record if chunks failed
       await adminClient.from('documents').delete().eq('id', documentId)
-      return NextResponse.json({ error: 'Failed to process document chunks.' }, { status: 500 })
+      return NextResponse.json({ 
+        error: 'Failed to process document chunks.',
+        details: chunkError.message
+      }, { status: 500 })
     }
 
     return NextResponse.json({
