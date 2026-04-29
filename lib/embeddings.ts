@@ -12,9 +12,8 @@ export async function generateEmbedding(text: string) {
     const result = await model.embedContent({
       content: { role: 'user', parts: [{ text: input }] },
       // outputDimensionality is supported by text-embedding-004 but missing in current SDK types.
-      // Note: text-embedding-004 supports up to 768 dimensions. 
-      // If your database expects 1536, you may need to update the schema or use a different model.
-      outputDimensionality: 1536
+      // We are using 768 dimensions to match text-embedding-004 and our database schema.
+      outputDimensionality: 768
     } as any)
     const embedding = result.embedding.values
 

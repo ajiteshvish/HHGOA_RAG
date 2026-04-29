@@ -17,8 +17,8 @@ create table if not exists public.document_chunks (
   document_id uuid references public.documents on delete cascade not null,
   chunk_index integer not null,
   content text not null,
-  -- text-embedding-3-small generates 1536 dimensions. Change this if using a different model.
-  embedding vector(1536),
+  -- text-embedding-004 generates up to 768 dimensions.
+  embedding vector(768),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -51,7 +51,7 @@ using (
 -- Create a function to search for documents
 -- This is a similarity search using pgvector
 create or replace function match_document_chunks (
-  query_embedding vector(1536),
+  query_embedding vector(768),
   match_threshold float,
   match_count int,
   p_user_id uuid
