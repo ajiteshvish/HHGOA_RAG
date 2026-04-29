@@ -8,11 +8,11 @@ export async function generateEmbedding(text: string) {
   const input = text.replace(/\n/g, ' ')
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'text-embedding-004' })
+    const model = genAI.getGenerativeModel({ model: 'gemini-embedding-2' })
     const result = await model.embedContent({
       content: { role: 'user', parts: [{ text: input }] },
-      // outputDimensionality is supported by text-embedding-004 but missing in current SDK types.
-      // We are using 768 dimensions to match text-embedding-004 and our database schema.
+      // outputDimensionality is supported by gemini-embedding-2 but missing in current SDK types.
+      // We are using 768 dimensions to match our database schema.
       outputDimensionality: 768
     } as any)
     const embedding = result.embedding.values
