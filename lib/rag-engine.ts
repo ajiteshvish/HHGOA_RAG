@@ -131,16 +131,53 @@ export async function executeRAGPipeline(
       const tGenStart = performance.now()
 
       try {
-        // Option A: Groq (Blazing-Fast <100ms TTFT)
-        if (process.env.GROQ_API_KEY) {
+        // Option A: OpenRouter (Qwen / Custom models)
+        if (process.env.OPENROUTER_API_KEY) {
+          const modelName = process.env.LLM_MODEL || 'qwen/qwen-2.5-72b-instruct'
+          const openai = new OpenAI({
+            apiKey: process.env.OPENROUTER_API_KEY,
+            baseURL: process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
+            defaultHeaders: {
+              'HTTP-Referer': 'https://github.com/ajiteshvish/HHGOA_RAG',
+              'X-Title': 'Voice RAG AI',
+            }
+          })
+
+          const chatStream = await openai.chat.completions.create({
+            model: modelName,
+            messages: [
+              { role: 'system', content: SYSTEM_PROMPT },
+              { role: 'user', content: userPrompt }
+            ],
+            stream: true,
+            temperature: 0.2
+          })
+
+          for await (const chunk of chatStream) {
+            const content = chunk.choices[0]?.delta?.content || ''
+            if (content) {
+              if (!hasRecordedTTFT) {
+                latency.ttft_ms = Math.round(performance.now() - tGenStart)
+                hasRecordedTTFT = true
+              }
+              controller.enqueue(encoder.encode(content))
+            }
+          }
+        }
+        // Option B: Groq (Ultra-Fast <100ms TTFT with Qwen / Llama models)
+        else if (process.env.GROQ_API_KEY) {
           const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+          const modelName = process.env.LLM_MODEL || 'qwen/qwen3.6-27b'
+
           const chatStream = await groq.chat.completions.create({
             messages: [
               { role: 'system', content: SYSTEM_PROMPT },
               { role: 'user', content: userPrompt }
             ],
-            model: 'llama-3.3-70b-versatile',
-            temperature: 0.2,
+            model: modelName,
+            temperature: 0.6,
+            max_completion_tokens: 2048,
+            top_p: 0.95,
             stream: true,
           })
 
@@ -155,10 +192,10 @@ export async function executeRAGPipeline(
             }
           }
         }
-        // Option B: Google Gemini 2.0 Flash / Flash-latest
+        // Option C: Google Gemini 2.0 Flash
         else if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
           const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY)
-          const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+          const model = genAI.getGenerativeModel({ model: process.env.LLM_MODEL || 'gemini-2.0-flash' })
 
           const result = await model.generateContentStream({
             contents: [
@@ -177,11 +214,14 @@ export async function executeRAGPipeline(
             }
           }
         }
-        // Option C: OpenAI GPT-4o-mini
+        // Option D: OpenAI GPT-4o-mini
         else if (process.env.OPENAI_API_KEY) {
-          const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+          const openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+            baseURL: process.env.OPENAI_BASE_URL
+          })
           const openAiStream = await openai.chat.completions.create({
-            model: 'gpt-4o-mini',
+            model: process.env.LLM_MODEL || 'gpt-4o-mini',
             messages: [
               { role: 'system', content: SYSTEM_PROMPT },
               { role: 'user', content: userPrompt }
@@ -200,7 +240,7 @@ export async function executeRAGPipeline(
             }
           }
         } else {
-          throw new Error('No LLM API key configured (GROQ_API_KEY, GOOGLE_GENERATIVE_AI_API_KEY, or OPENAI_API_KEY).')
+          throw new Error('No LLM API key configured (OPENROUTER_API_KEY, GROQ_API_KEY, GOOGLE_GENERATIVE_AI_API_KEY, or OPENAI_API_KEY).')
         }
 
         latency.generation_ms = Math.round(performance.now() - tGenStart)
