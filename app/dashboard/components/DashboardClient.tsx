@@ -90,11 +90,11 @@ export default function DashboardClient({ userEmail }: { userEmail: string }) {
             <p className="text-[11px] uppercase tracking-wider text-zinc-600 font-medium px-2 mb-2">
               Your Documents ({documents.length})
             </p>
-            {isLoadingDocs ? (
-              <div className="text-center py-8 text-zinc-600 text-sm">Loading...</div>
-            ) : (
-              <DocumentList documents={documents} onDelete={handleDeleteDocument} />
-            )}
+            <DocumentList
+              documents={documents}
+              isLoading={isLoadingDocs}
+              onDelete={handleDeleteDocument}
+            />
           </div>
         </aside>
 
