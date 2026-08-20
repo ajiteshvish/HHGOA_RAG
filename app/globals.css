@@ -33,16 +33,16 @@
 }
 
 .text-3d-goan {
-  text-shadow: 4px 4px 0 #e91e63, 8px 8px 0 #d2691e;
-  -webkit-text-stroke: 2px #000000;
+  text-shadow: 3px 3px 0 #e91e63, 6px 6px 0 #000000;
   color: #ffdb3c;
+  letter-spacing: 0.02em;
   font-family: 'Anton', 'Anybody', sans-serif;
 }
 
 .text-3d-goan-sm {
-  text-shadow: 3px 3px 0 #e91e63, 6px 6px 0 #d2691e;
-  -webkit-text-stroke: 1px #000000;
+  text-shadow: 2px 2px 0 #e91e63, 4px 4px 0 #000000;
   color: #ffdb3c;
+  letter-spacing: 0.02em;
   font-family: 'Anton', 'Anybody', sans-serif;
 }
 
