@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "benchmark": "tsx scripts/benchmark.ts"
+    "benchmark": "tsx scripts/benchmark.ts",
+    "ingest:msmarco": "tsx scripts/ingest-msmarco.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
