@@ -16,6 +16,7 @@ import {
 import VoiceRecorder from './VoiceRecorder'
 import LatencyHUD, { MessageTelemetry } from './LatencyHUD'
 import ThinkingState from './ThinkingState'
+import PromptBar from './PromptBar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { RagCitation } from '@/lib/harness'
 
@@ -769,64 +770,22 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
         </div>
       )}
 
-      {/* Composer Panel */}
+      {/* Composer Panel with PromptBar */}
       <div className="mt-auto shrink-0 p-3 bg-zinc-900/60 border-t border-zinc-800/80">
-        <div
-          role="presentation"
-          onClick={() => inputRef.current?.focus()}
-          className="flex cursor-text flex-col gap-2.5 rounded-xl border border-zinc-700/80 bg-zinc-800/70 p-3 shadow-sm transition-all duration-150 focus-within:border-emerald-500/70 focus-within:shadow-[0_0_15px_rgba(16,185,129,0.1)]"
-        >
-          <input
-            ref={inputRef}
-            value={draft}
-            onChange={e => setDraft(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter') handleSend()
-            }}
-            placeholder={
-              hasDocuments
-                ? 'Ask a question or click the mic to speak...'
-                : 'Ask a question about MSMARCO-XI or upload files...'
-            }
-            disabled={isLoading}
-            aria-label="Chat prompt"
-            className="min-h-5 bg-transparent text-[13.5px] leading-relaxed text-zinc-100 outline-none placeholder:text-zinc-500"
-          />
-
-          <div className="flex items-center justify-between pt-1">
-            {/* Voice Input Recorder */}
-            <VoiceRecorder
-              onTranscriptionComplete={handleVoiceTranscription}
-              disabled={isLoading}
-            />
-
-            {/* Floating Send Icon */}
-            <button
-              type="button"
-              aria-label="Send"
-              disabled={!canSend}
-              onClick={handleSend}
-              className="flex size-7 items-center justify-center rounded-lg transition-all duration-200 enabled:active:scale-[0.96] cursor-pointer"
-              style={{
-                background: canSend ? '#34d399' : '#27272a',
-                color: canSend ? '#09090b' : '#71717a',
-              }}
-            >
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12 19V5M5 12l7-7 7 7" />
-              </svg>
-            </button>
-          </div>
-        </div>
+        <PromptBar
+          placeholder={
+            hasDocuments
+              ? 'Ask a question, speak by voice, type @ for sources or / for commands...'
+              : 'Ask about MSMARCO-XI, speak by voice, type @ for sources or / for commands...'
+          }
+          isLoading={isLoading}
+          onSend={(text, sttMs) => executeQuery(text, sttMs)}
+          onRunBenchmark={() => {
+            setActiveTab('Telemetry')
+            runInBrowserBenchmark()
+          }}
+          onClearChat={clearChat}
+        />
       </div>
     </div>
   )
