@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import FileUpload from './FileUpload'
 import ChatInterface from './ChatInterface'
 import DocumentList from './DocumentList'
-import { LogOut, Brain, FileStack } from 'lucide-react'
+import { LogOut, FileStack, X, Menu, UploadCloud } from 'lucide-react'
+import Link from 'next/link'
 
 interface Document {
   id: string
@@ -16,6 +17,7 @@ interface Document {
 export default function DashboardClient({ userEmail }: { userEmail: string }) {
   const [documents, setDocuments] = useState<Document[]>([])
   const [isLoadingDocs, setIsLoadingDocs] = useState(true)
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false)
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -32,12 +34,10 @@ export default function DashboardClient({ userEmail }: { userEmail: string }) {
   }, [])
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchDocuments()
   }, [fetchDocuments])
 
   const handleUploadComplete = () => {
-    // Add the doc to the list (we refetch for accurate data)
     fetchDocuments()
   }
 
@@ -46,50 +46,83 @@ export default function DashboardClient({ userEmail }: { userEmail: string }) {
   }
 
   return (
-    <div className="flex flex-col h-screen w-full bg-zinc-950">
+    <div className="flex flex-col h-[100dvh] w-full bg-[#0e0e11] overflow-hidden">
       {/* Top Navigation Bar */}
-      <header className="flex items-center justify-between px-6 py-3 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-50">
+      <header className="flex shrink-0 items-center justify-between px-4 sm:px-6 py-3 border-b-4 border-black bg-[#171305] text-[#f5f5f0] z-30">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-            <Brain className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-base font-semibold text-zinc-100 tracking-tight">Personal RAG AI</h1>
-            <p className="text-[11px] text-zinc-500">Chat with your documents</p>
-          </div>
+          {/* Mobile Drawer Trigger */}
+          <button
+            type="button"
+            onClick={() => setIsMobileDrawerOpen(!isMobileDrawerOpen)}
+            className="md:hidden flex items-center justify-center p-2 rounded-lg bg-[#d2691e] text-black border-2 border-black font-bold shadow-[2px_2px_0_0_#000] cursor-pointer"
+            title="Toggle Documents Drawer"
+          >
+            {isMobileDrawerOpen ? <X className="size-4" /> : <Menu className="size-4" />}
+          </button>
+
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-lg bg-[#d2691e] border-2 border-black flex items-center justify-center shadow-[2px_2px_0_0_#000] font-bold text-black text-sm group-hover:scale-105 transition-transform">
+              ⚡
+            </div>
+            <div>
+              <h1 className="text-sm sm:text-base font-['Anton','Anybody',sans-serif] text-[#d2691e] tracking-tight uppercase text-3d-goan-sm">
+                HH GOA • VOICE RAG
+              </h1>
+              <p className="text-[10px] text-zinc-400 font-['Space_Grotesk',sans-serif] hidden sm:block">
+                Sub-200ms Qwen 3.6 &amp; Neon pgvector
+              </p>
+            </div>
+          </Link>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-xs text-zinc-500 hidden sm:block">{userEmail}</span>
+
+        <div className="flex items-center gap-2 sm:gap-4">
+          {/* Mobile quick upload badge */}
+          <button
+            type="button"
+            onClick={() => setIsMobileDrawerOpen(true)}
+            className="md:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 font-medium cursor-pointer"
+          >
+            <UploadCloud className="size-3.5 text-emerald-400" />
+            <span>Docs ({documents.length})</span>
+          </button>
+
+          <span className="text-xs text-zinc-400 font-mono hidden lg:block">{userEmail}</span>
+
           <form action="/api/auth/signout" method="POST">
             <button
               type="submit"
-              className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 text-xs text-black font-bold bg-[#e91e63] hover:bg-white px-3 py-1.5 rounded border-2 border-black shadow-[2px_2px_0_0_#000] transition-all cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
-              Sign out
+              <span className="hidden sm:inline">Sign out</span>
             </button>
           </form>
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar - Documents */}
-        <aside className="w-80 border-r border-zinc-800 flex flex-col bg-zinc-950 shrink-0 hidden md:flex">
+      {/* Main Layout Area */}
+      <div className="flex flex-1 min-h-0 overflow-hidden relative">
+        {/* Left Sidebar - Desktop */}
+        <aside className="w-80 border-r-4 border-black flex flex-col bg-[#171305] text-[#f5f5f0] shrink-0 hidden md:flex">
           {/* Upload Section */}
-          <div className="p-4 border-b border-zinc-800">
+          <div className="p-4 border-b-2 border-zinc-800">
             <div className="flex items-center gap-2 mb-3">
-              <FileStack className="w-4 h-4 text-zinc-400" />
-              <h2 className="text-sm font-medium text-zinc-300">Upload Documents</h2>
+              <FileStack className="w-4 h-4 text-[#d2691e]" />
+              <h2 className="text-xs font-['Space_Grotesk',sans-serif] uppercase font-bold text-zinc-200">
+                Upload &amp; Chunk Documents
+              </h2>
             </div>
             <FileUpload onUploadComplete={handleUploadComplete} />
           </div>
 
           {/* Document List */}
           <div className="flex-1 overflow-y-auto p-3">
-            <p className="text-[11px] uppercase tracking-wider text-zinc-600 font-medium px-2 mb-2">
-              Your Documents ({documents.length})
-            </p>
+            <div className="flex items-center justify-between px-2 mb-2">
+              <p className="text-[11px] uppercase tracking-wider text-zinc-400 font-['Space_Grotesk',sans-serif] font-bold">
+                Your Documents ({documents.length})
+              </p>
+              <span className="text-[10px] text-emerald-400 font-mono font-medium">pgvector active</span>
+            </div>
             <DocumentList
               documents={documents}
               isLoading={isLoadingDocs}
@@ -98,13 +131,55 @@ export default function DashboardClient({ userEmail }: { userEmail: string }) {
           </div>
         </aside>
 
-        {/* Mobile upload toggle (shown on small screens) */}
-        <div className="md:hidden absolute bottom-20 right-4 z-40">
-          {/* Could add a floating action button for mobile upload */}
-        </div>
+        {/* Mobile Slide-over Drawer */}
+        {isMobileDrawerOpen && (
+          <div className="md:hidden fixed inset-0 z-50 flex">
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/70 backdrop-blur-xs"
+              onClick={() => setIsMobileDrawerOpen(false)}
+            />
 
-        {/* Chat Area */}
-        <div className="flex-1 flex flex-col min-w-0">
+            {/* Drawer Panel */}
+            <div className="relative w-4/5 max-w-xs bg-[#171305] text-[#f5f5f0] border-r-4 border-black h-full flex flex-col z-10 shadow-2xl p-4 space-y-4">
+              <div className="flex items-center justify-between border-b-2 border-zinc-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <FileStack className="w-4 h-4 text-[#d2691e]" />
+                  <h2 className="text-sm font-['Space_Grotesk',sans-serif] font-bold uppercase">
+                    Documents &amp; Upload
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileDrawerOpen(false)}
+                  className="p-1 rounded bg-zinc-800 text-zinc-300 hover:text-white"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              {/* Mobile File Upload */}
+              <div>
+                <FileUpload onUploadComplete={handleUploadComplete} />
+              </div>
+
+              {/* Mobile Document List */}
+              <div className="flex-1 overflow-y-auto">
+                <p className="text-[11px] uppercase tracking-wider text-zinc-400 font-bold mb-2">
+                  Indexed Files ({documents.length})
+                </p>
+                <DocumentList
+                  documents={documents}
+                  isLoading={isLoadingDocs}
+                  onDelete={handleDeleteDocument}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Chat Area - Fits 100% Screen */}
+        <div className="flex-1 flex flex-col min-w-0 h-full p-2 sm:p-4 bg-[#0e0e11]">
           <ChatInterface hasDocuments={documents.length > 0} />
         </div>
       </div>
