@@ -80,7 +80,7 @@ export default function Home() {
             </div>
 
             {/* Main Headline */}
-            <h1 className="font-['Anybody','Space_Grotesk',sans-serif] text-3xl sm:text-5xl md:text-6xl uppercase text-retro-3d-pop-hero leading-[1.2] tracking-normal mt-2 mb-3">
+            <h1 className="font-['Space_Grotesk',sans-serif] text-2xl sm:text-4xl md:text-5xl font-bold uppercase text-retro-3d-pop-hero leading-tight tracking-tight mt-1 mb-2">
               SPEAK A QUESTION. <br />GET A GROUNDED ANSWER.
             </h1>
 
