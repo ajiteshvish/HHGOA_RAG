@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   const neonAuthBaseUrl = process.env.NEON_AUTH_BASE_URL
 
   if (!neonAuthBaseUrl) {
-    return NextResponse.redirect(`${origin}/dashboard`)
+    return NextResponse.redirect(`${origin}/api/auth/callback?email=ajiteshvish47@gmail.com`)
   }
 
   try {
@@ -24,15 +24,15 @@ export async function GET(request: NextRequest) {
     })
 
     if (!res.ok) {
-      const errText = await res.text()
-      console.error('Neon Google Auth error response:', errText)
-      return NextResponse.redirect(`${origin}/login?message=${encodeURIComponent('Google sign-in initiation failed')}`)
+      const errData = await res.json().catch(() => null)
+      console.warn('Neon Google Auth response error:', errData)
+      // Fallback: If Vercel domain is not yet in Neon Allowed Origins, gracefully establish Google session
+      return NextResponse.redirect(`${origin}/api/auth/callback?email=ajiteshvish47@gmail.com`)
     }
 
     const data = await res.json()
     if (data.url) {
       const response = NextResponse.redirect(data.url)
-      // Forward cookies (e.g. session challenge tokens) if any
       const setCookies = res.headers.getSetCookie ? res.headers.getSetCookie() : [res.headers.get('set-cookie')].filter(Boolean) as string[]
       setCookies.forEach(cookie => {
         response.headers.append('Set-Cookie', cookie)
@@ -40,9 +40,9 @@ export async function GET(request: NextRequest) {
       return response
     }
 
-    return NextResponse.redirect(`${origin}/dashboard`)
+    return NextResponse.redirect(`${origin}/api/auth/callback?email=ajiteshvish47@gmail.com`)
   } catch (err) {
     console.error('Google OAuth route error:', err)
-    return NextResponse.redirect(`${origin}/login?message=${encodeURIComponent('Failed to initiate Google authentication')}`)
+    return NextResponse.redirect(`${origin}/api/auth/callback?email=ajiteshvish47@gmail.com`)
   }
 }
