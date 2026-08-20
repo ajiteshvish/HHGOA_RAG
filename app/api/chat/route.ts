@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
 
     // 2. Parse request payload
     const body = await request.json()
-    const { query, sttMs = 0, minSimilarityThreshold = 0.55 } = body
+    const { query, sttMs = 0, minSimilarityThreshold = 0.35, conversationHistory = [] } = body
 
     if (!query || typeof query !== 'string' || query.trim().length === 0) {
       return NextResponse.json({ error: 'No query provided' }, { status: 400 })
@@ -23,7 +23,8 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       query: query.trim(),
       sttMs: typeof sttMs === 'number' ? sttMs : 0,
-      minSimilarityThreshold: typeof minSimilarityThreshold === 'number' ? minSimilarityThreshold : 0.55
+      minSimilarityThreshold: typeof minSimilarityThreshold === 'number' ? minSimilarityThreshold : 0.35,
+      conversationHistory: Array.isArray(conversationHistory) ? conversationHistory : []
     })
 
     // 4. Send response stream with latency & citation metadata headers

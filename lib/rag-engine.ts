@@ -1,4 +1,4 @@
-import { searchSimilarChunks } from '@/lib/db'
+import { searchSimilarChunks, saveChatMessage } from '@/lib/db'
 import { generateEmbedding } from '@/lib/embeddings'
 import { evaluateInputGuardrails, evaluateRetrievalGuardrails } from '@/lib/guardrails'
 import { withRetry, RagCitation, LatencyBreakdown } from '@/lib/harness'
@@ -12,6 +12,7 @@ export interface RAGEngineOptions {
   sttMs?: number
   minSimilarityThreshold?: number
   matchCount?: number
+  conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>
 }
 
 export interface RetrievedChunk {
@@ -29,17 +30,19 @@ export interface RAGStreamResult {
   confidence: number
 }
 
-const SYSTEM_PROMPT = `You are a fast, precise, and helpful AI assistant for personal documents.
-Answer the question accurately using ONLY the provided document context.
+const SYSTEM_PROMPT = `You are a fast, intelligent, and precise personal AI assistant for documents.
+Answer the user's question accurately in the same language (English, Hindi, or Hinglish as requested) using ONLY the provided document context.
 
-Rules:
-- Be direct, concise, and professional.
-- Do not make up facts or extrapolate beyond the context.
-- Use clean markdown bullet points or bold text where appropriate.
-- If information is not in the context, explicitly state so.`
+Formatting & Structure Guidelines:
+- Format your response cleanly with clear markdown headers (### Category), bullet points (-), and highlighted bold keywords (**Key Term**).
+- Keep content organized in neat sections (e.g., 🎓 Education, 💼 Experience, 🛠️ Skills, 🚀 Projects, 🏆 Achievements).
+- If the user asks for a summary or general query (e.g., "maine kya info diya hai"), provide a crisp, well-structured breakdown.
+- Do not fabricate facts outside the context.
+- Maintain context awareness across prior turns in the conversation.
+- Be direct, professional, and friendly.`
 
 /**
- * Executes low-latency grounded RAG pipeline with stage-by-stage instrumentation on Neon DB.
+ * Executes low-latency grounded RAG pipeline with multi-turn memory & Neon DB persistence.
  */
 export async function executeRAGPipeline(
   options: RAGEngineOptions
@@ -48,8 +51,9 @@ export async function executeRAGPipeline(
     userId,
     query,
     sttMs = 0,
-    minSimilarityThreshold = 0.55,
-    matchCount = 5
+    minSimilarityThreshold = 0.35,
+    matchCount = 5,
+    conversationHistory = []
   } = options
 
   const overallStartTime = performance.now()
@@ -67,6 +71,9 @@ export async function executeRAGPipeline(
   if (inputCheck.shouldRefuse) {
     latency.total_ms = Math.round(performance.now() - overallStartTime)
     const refusalText = inputCheck.refusalMessage || 'Unable to process query.'
+    // Persist turn
+    saveChatMessage({ userId, role: 'user', content: query }).catch(() => {})
+    saveChatMessage({ userId, role: 'assistant', content: refusalText }).catch(() => {})
     return createStaticStreamResponse(refusalText, latency, [], true, 0)
   }
 
@@ -103,6 +110,8 @@ export async function executeRAGPipeline(
   if (retrievalCheck.shouldRefuse) {
     latency.total_ms = Math.round(performance.now() - overallStartTime)
     const refusalText = retrievalCheck.refusalMessage || 'No relevant information found.'
+    saveChatMessage({ userId, role: 'user', content: query }).catch(() => {})
+    saveChatMessage({ userId, role: 'assistant', content: refusalText }).catch(() => {})
     return createStaticStreamResponse(
       refusalText,
       latency,
@@ -119,12 +128,28 @@ export async function executeRAGPipeline(
     similarity: parseFloat((c.similarity || 0).toFixed(3))
   }))
 
-  // 5. Build Context and Invoke High-Speed Streaming LLM
+  // 5. Build Context and Multi-turn Messages
   const contextText = chunks.map(c => c.content).join('\n\n---\n\n')
   const userPrompt = `Context from user's documents:\n${contextText}\n\nQuestion: ${query}`
 
+  // Slice recent history (last 4 turns) for context window
+  const recentHistory = conversationHistory.slice(-4).map(h => ({
+    role: h.role,
+    content: h.content
+  }))
+
+  const messagesPayload = [
+    { role: 'system' as const, content: SYSTEM_PROMPT },
+    ...recentHistory,
+    { role: 'user' as const, content: userPrompt }
+  ]
+
+  // Persist user prompt to Neon DB
+  saveChatMessage({ userId, role: 'user', content: query }).catch(() => {})
+
   const encoder = new TextEncoder()
   let hasRecordedTTFT = false
+  let accumulatedAssistantResponse = ''
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -145,10 +170,7 @@ export async function executeRAGPipeline(
 
           const chatStream = await openai.chat.completions.create({
             model: modelName,
-            messages: [
-              { role: 'system', content: SYSTEM_PROMPT },
-              { role: 'user', content: userPrompt }
-            ],
+            messages: messagesPayload,
             stream: true,
             temperature: 0.2
           })
@@ -160,6 +182,7 @@ export async function executeRAGPipeline(
                 latency.ttft_ms = Math.round(performance.now() - tGenStart)
                 hasRecordedTTFT = true
               }
+              accumulatedAssistantResponse += content
               controller.enqueue(encoder.encode(content))
             }
           }
@@ -170,10 +193,7 @@ export async function executeRAGPipeline(
           const modelName = process.env.LLM_MODEL || 'qwen/qwen3.6-27b'
 
           const chatStream = await groq.chat.completions.create({
-            messages: [
-              { role: 'system', content: SYSTEM_PROMPT },
-              { role: 'user', content: userPrompt }
-            ],
+            messages: messagesPayload,
             model: modelName,
             temperature: 0.6,
             max_completion_tokens: 2048,
@@ -188,6 +208,7 @@ export async function executeRAGPipeline(
                 latency.ttft_ms = Math.round(performance.now() - tGenStart)
                 hasRecordedTTFT = true
               }
+              accumulatedAssistantResponse += content
               controller.enqueue(encoder.encode(content))
             }
           }
@@ -210,6 +231,7 @@ export async function executeRAGPipeline(
                 latency.ttft_ms = Math.round(performance.now() - tGenStart)
                 hasRecordedTTFT = true
               }
+              accumulatedAssistantResponse += text
               controller.enqueue(encoder.encode(text))
             }
           }
@@ -222,10 +244,7 @@ export async function executeRAGPipeline(
           })
           const openAiStream = await openai.chat.completions.create({
             model: process.env.LLM_MODEL || 'gpt-4o-mini',
-            messages: [
-              { role: 'system', content: SYSTEM_PROMPT },
-              { role: 'user', content: userPrompt }
-            ],
+            messages: messagesPayload,
             stream: true
           })
 
@@ -236,15 +255,26 @@ export async function executeRAGPipeline(
                 latency.ttft_ms = Math.round(performance.now() - tGenStart)
                 hasRecordedTTFT = true
               }
+              accumulatedAssistantResponse += content
               controller.enqueue(encoder.encode(content))
             }
           }
         } else {
-          throw new Error('No LLM API key configured (OPENROUTER_API_KEY, GROQ_API_KEY, GOOGLE_GENERATIVE_AI_API_KEY, or OPENAI_API_KEY).')
+          throw new Error('No LLM API key configured.')
         }
 
         latency.generation_ms = Math.round(performance.now() - tGenStart)
         latency.total_ms = Math.round(performance.now() - overallStartTime)
+
+        // Persist completed assistant response in Neon DB
+        if (accumulatedAssistantResponse) {
+          saveChatMessage({
+            userId,
+            role: 'assistant',
+            content: accumulatedAssistantResponse,
+            telemetry: latency as unknown as Record<string, unknown>
+          }).catch(e => console.error('Failed to persist assistant chat:', e))
+        }
       } catch (err) {
         console.error('LLM Streaming error:', err)
         const errMsg = err instanceof Error ? err.message : 'Generation failed'

@@ -1,13 +1,18 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { withRetry } from './harness'
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || '')
-
 // In-memory LRU-like cache for frequent query embeddings to save 100-200ms
 const embeddingCache = new Map<string, number[]>()
 const MAX_CACHE_SIZE = 500
 
 export async function generateEmbedding(text: string): Promise<number[]> {
+  const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY
+  if (!apiKey || apiKey.trim().length === 0) {
+    throw new Error(
+      'Missing GOOGLE_GENERATIVE_AI_API_KEY in .env.local. Please get your free API key at https://aistudio.google.com/app/apikey'
+    )
+  }
+
   const input = text.replace(/\n/g, ' ').trim()
 
   if (embeddingCache.has(input)) {
@@ -16,10 +21,11 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 
   return await withRetry(async () => {
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-embedding-2' })
+      const genAI = new GoogleGenerativeAI(apiKey)
+      const model = genAI.getGenerativeModel({ model: 'gemini-embedding-001' })
       const result = await model.embedContent({
         content: { role: 'user', parts: [{ text: input }] },
-        // 768 dimensions to match our database pgvector schema
+        // 768 dimensions to match our Neon pgvector schema
         outputDimensionality: 768
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any)

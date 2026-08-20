@@ -70,7 +70,8 @@ export function evaluateRetrievalGuardrails(
   chunks: Array<{ content: string; similarity: number }>,
   options: GuardrailOptions = {}
 ): GuardrailCheckResult {
-  const { minSimilarityThreshold = 0.60 } = options
+  // Calibrated threshold to support Hinglish, conversational, and multilingual document queries
+  const { minSimilarityThreshold = 0.35 } = options
 
   if (!chunks || chunks.length === 0) {
     return {
