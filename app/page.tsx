@@ -27,7 +27,7 @@ export default function Home() {
               ⚡
             </div>
             <div className="flex flex-col">
-              <span className="font-['Anton','Anybody',sans-serif] text-xl sm:text-2xl text-[#d2691e] tracking-tight uppercase text-3d-goan-sm">
+              <span className="font-['Anton','Anybody',sans-serif] text-xl sm:text-2xl tracking-tight uppercase text-retro-3d-pop-sm">
                 HH GOA • VOICE RAG
               </span>
             </div>
@@ -80,7 +80,7 @@ export default function Home() {
             </div>
 
             {/* Main Headline */}
-            <h1 className="font-['Anton','Anybody',sans-serif] text-4xl sm:text-6xl md:text-7xl uppercase text-3d-goan leading-tight tracking-tight mt-1 mb-2">
+            <h1 className="font-['Anton','Anybody',sans-serif] text-4xl sm:text-6xl md:text-7xl uppercase text-retro-3d-pop-hero leading-tight tracking-tight mt-1 mb-2">
               SPEAK A QUESTION. <br />GET A GROUNDED ANSWER.
             </h1>
 
@@ -170,7 +170,7 @@ export default function Home() {
         <section id="benchmarks" className="bg-[#d2691e] border-4 border-black p-6 sm:p-8 shadow-[8px_8px_0px_0px_#000000] relative overflow-hidden">
           <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 border-b-3 border-black pb-4">
             <div>
-              <h2 className="font-['Anton','Anybody',sans-serif] text-2xl sm:text-4xl uppercase text-3d-goan">
+              <h2 className="font-['Anton','Anybody',sans-serif] text-2xl sm:text-4xl uppercase text-retro-3d-pop">
                 Live Latency Analytics Harness
               </h2>
               <p className="font-['Space_Grotesk',sans-serif] text-xs font-bold text-black mt-1">
@@ -231,7 +231,7 @@ export default function Home() {
       <footer className="border-t-8 border-[#d2691e] bg-black text-[#f5f5f0] w-full py-8 mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-8 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
           <div className="flex flex-col gap-1">
-            <div className="font-['Anton','Anybody',sans-serif] text-2xl text-[#e91e63] text-3d-goan-sm uppercase">
+            <div className="font-['Anton','Anybody',sans-serif] text-2xl text-retro-3d-pop-sm uppercase">
               HH GOA • VOICE RAG
             </div>
             <p className="font-['Space_Grotesk',sans-serif] text-xs font-bold">

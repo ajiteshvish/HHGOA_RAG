@@ -65,7 +65,7 @@ export default function DashboardClient({ userEmail }: { userEmail: string }) {
               ⚡
             </div>
             <div>
-              <h1 className="text-sm sm:text-base font-['Anton','Anybody',sans-serif] text-[#d2691e] tracking-tight uppercase text-3d-goan-sm">
+              <h1 className="text-sm sm:text-base font-['Anton','Anybody',sans-serif] tracking-tight uppercase text-retro-3d-pop-sm">
                 HH GOA • VOICE RAG
               </h1>
               <p className="text-[10px] text-zinc-400 font-['Space_Grotesk',sans-serif] hidden sm:block">

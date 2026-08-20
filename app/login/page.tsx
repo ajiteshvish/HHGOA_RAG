@@ -17,7 +17,7 @@ export default async function LoginPage({
           <Link href="/" className="w-12 h-12 rounded-xl bg-[#d2691e] border-3 border-black flex items-center justify-center shadow-[3px_3px_0_0_#000] text-xl font-bold text-black mb-2 hover:scale-105 transition-transform">
             ⚡
           </Link>
-          <h1 className="font-['Anton','Anybody',sans-serif] text-3xl text-[#d2691e] uppercase text-3d-goan tracking-tight">
+          <h1 className="font-['Anton','Anybody',sans-serif] text-3xl uppercase text-retro-3d-pop tracking-tight">
             HH GOA • VOICE RAG
           </h1>
           <p className="text-xs text-zinc-400 mt-1 font-['Be_Vietnam_Pro',sans-serif]">
