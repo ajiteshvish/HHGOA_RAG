@@ -2,11 +2,15 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Send, Loader2, Bot, User, Sparkles } from 'lucide-react'
+import VoiceRecorder from './VoiceRecorder'
+import LatencyHUD, { MessageTelemetry } from './LatencyHUD'
+import { RagCitation } from '@/lib/harness'
 
 interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
+  telemetry?: MessageTelemetry
 }
 
 interface ChatInterfaceProps {
@@ -28,9 +32,8 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
     scrollToBottom()
   }, [messages])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const query = input.trim()
+  const executeQuery = async (queryText: string, sttMs: number = 0) => {
+    const query = queryText.trim()
     if (!query || isLoading) return
 
     // Add user message
@@ -43,7 +46,7 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
     setInput('')
     setIsLoading(true)
 
-    // Add a placeholder assistant message
+    // Add placeholder assistant message
     const assistantMessageId = (Date.now() + 1).toString()
     setMessages(prev => [
       ...prev,
@@ -54,7 +57,7 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({ query, sttMs }),
       })
 
       if (!response.ok) {
@@ -62,7 +65,28 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
         throw new Error(errData.error || 'Chat request failed')
       }
 
-      // Stream the response
+      // Parse latency & guardrail telemetry headers
+      const telemetry: MessageTelemetry = {
+        stt_ms: parseInt(response.headers.get('X-Latency-STT') || '0', 10),
+        embedding_ms: parseInt(response.headers.get('X-Latency-Embedding') || '0', 10),
+        retrieval_ms: parseInt(response.headers.get('X-Latency-Retrieval') || '0', 10),
+        ttft_ms: parseInt(response.headers.get('X-Latency-TTFT') || '0', 10),
+        total_ms: parseInt(response.headers.get('X-Latency-Total') || '0', 10),
+        is_refusal: response.headers.get('X-Guardrail-Refusal') === 'true',
+        confidence: parseFloat(response.headers.get('X-Guardrail-Confidence') || '1'),
+        citations: []
+      }
+
+      const citationsHeader = response.headers.get('X-Citations')
+      if (citationsHeader) {
+        try {
+          telemetry.citations = JSON.parse(decodeURIComponent(citationsHeader)) as RagCitation[]
+        } catch {
+          // Ignore citation parse errors
+        }
+      }
+
+      // Stream the response body
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
 
@@ -78,7 +102,7 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
           setMessages(prev =>
             prev.map(msg =>
               msg.id === assistantMessageId
-                ? { ...msg, content: accumulatedContent }
+                ? { ...msg, content: accumulatedContent, telemetry }
                 : msg
             )
           )
@@ -99,12 +123,27 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
     }
   }
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    await executeQuery(input, 0)
+  }
+
+  const handleVoiceTranscription = async (transcribedText: string, sttMs: number) => {
+    await executeQuery(transcribedText, sttMs)
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-zinc-800 flex items-center gap-2">
-        <Sparkles className="w-5 h-5 text-emerald-400" />
-        <h2 className="font-semibold text-base text-zinc-100">Chat with your data</h2>
+      <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-emerald-400" />
+          <h2 className="font-semibold text-base text-zinc-100">Voice-Enabled RAG</h2>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 font-medium">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          Fast Pipeline &lt;200ms
+        </div>
       </div>
 
       {/* Messages */}
@@ -115,11 +154,11 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
               <Bot className="w-7 h-7 text-zinc-500" />
             </div>
             <div>
-              <p className="text-zinc-400 text-sm font-medium">No messages yet</p>
+              <p className="text-zinc-400 text-sm font-medium">Speak or type your question</p>
               <p className="text-zinc-600 text-xs mt-1">
                 {hasDocuments
-                  ? 'Ask a question about your uploaded documents.'
-                  : 'Upload a document first, then ask questions.'}
+                  ? 'Click the microphone to speak, or type below.'
+                  : 'Upload a document first, then ask questions by voice or text.'}
               </p>
             </div>
           </div>
@@ -136,17 +175,24 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
               </div>
             )}
             <div
-              className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
+              className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                 message.role === 'user'
-                  ? 'bg-emerald-600 text-white rounded-br-md'
+                  ? 'bg-emerald-600 text-white rounded-br-md whitespace-pre-wrap'
                   : 'bg-zinc-800 text-zinc-200 rounded-bl-md'
               }`}
             >
-              {message.content || (
+              {message.content ? (
+                <div className="whitespace-pre-wrap">{message.content}</div>
+              ) : (
                 <span className="inline-flex items-center gap-1 text-zinc-500">
                   <Loader2 className="w-3 h-3 animate-spin" />
-                  Thinking...
+                  Processing voice &amp; retrieval...
                 </span>
+              )}
+
+              {/* Real-time Latency & Groundedness HUD */}
+              {message.role === 'assistant' && message.telemetry && (
+                <LatencyHUD telemetry={message.telemetry} />
               )}
             </div>
             {message.role === 'user' && (
@@ -159,9 +205,15 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
+      {/* Input Bar with Voice Recorder */}
       <div className="px-4 py-3 border-t border-zinc-800">
-        <form onSubmit={handleSubmit} className="flex gap-2">
+        <form onSubmit={handleSubmit} className="flex items-center gap-2">
+          {/* Voice Microphone Recorder */}
+          <VoiceRecorder
+            onTranscriptionComplete={handleVoiceTranscription}
+            disabled={!hasDocuments || isLoading}
+          />
+
           <input
             ref={inputRef}
             type="text"
@@ -170,13 +222,14 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
             disabled={!hasDocuments || isLoading}
             placeholder={
               hasDocuments
-                ? 'Ask anything about your data...'
+                ? 'Speak with mic or type your question...'
                 : 'Upload a document to start chatting'
             }
             className="flex-1 px-4 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-sm text-zinc-200 
                        placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50
                        disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           />
+
           <button
             type="submit"
             disabled={!hasDocuments || isLoading || !input.trim()}

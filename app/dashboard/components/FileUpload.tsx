@@ -1,12 +1,14 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { Upload, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
+import { Upload, Loader2, CheckCircle, AlertCircle, Layers } from 'lucide-react'
+import { ChunkingStrategy } from '@/lib/chunker'
 
 interface UploadedDoc {
   id: string
   name: string
   chunks: number
+  strategy?: string
 }
 
 interface FileUploadProps {
@@ -17,6 +19,7 @@ const acceptedTypes = [
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'text/plain',
+  'text/markdown'
 ]
 
 export default function FileUpload({ onUploadComplete }: FileUploadProps) {
@@ -25,12 +28,14 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [uploadMessage, setUploadMessage] = useState('')
   const [progress, setProgress] = useState(0)
-
+  const [selectedStrategy, setSelectedStrategy] = useState<ChunkingStrategy>('auto')
 
   const handleFile = useCallback(async (file: File) => {
-    if (!acceptedTypes.includes(file.type)) {
+    // Check type or extension
+    const isTxtOrMd = file.name.endsWith('.txt') || file.name.endsWith('.md')
+    if (!acceptedTypes.includes(file.type) && !isTxtOrMd) {
       setUploadStatus('error')
-      setUploadMessage('Unsupported file type. Please upload PDF, DOCX, or TXT.')
+      setUploadMessage('Unsupported file type. Please upload PDF, DOCX, TXT, or MD.')
       return
     }
 
@@ -40,6 +45,7 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
 
     const formData = new FormData()
     formData.append('file', file)
+    formData.append('strategy', selectedStrategy)
 
     try {
       setProgress(30)
@@ -57,7 +63,7 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
 
       setProgress(100)
       setUploadStatus('success')
-      setUploadMessage(`"${data.document.name}" processed (${data.document.chunks} chunks)`)
+      setUploadMessage(`"${data.document.name}" indexed with ${data.document.strategy || selectedStrategy} chunking (${data.document.chunks} chunks)`)
       onUploadComplete(data.document)
     } catch (err: unknown) {
       setUploadStatus('error')
@@ -66,7 +72,7 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
     } finally {
       setIsUploading(false)
     }
-  }, [onUploadComplete])
+  }, [onUploadComplete, selectedStrategy])
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -90,7 +96,35 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
   }, [handleFile])
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* Chunking Strategy Selector */}
+      <div className="bg-zinc-900/70 border border-zinc-800 rounded-xl p-3 text-xs space-y-1.5">
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-1.5 font-medium text-zinc-300">
+            <Layers className="w-3.5 h-3.5 text-emerald-400" />
+            Chunking Strategy:
+          </label>
+          <select
+            value={selectedStrategy}
+            onChange={(e) => setSelectedStrategy(e.target.value as ChunkingStrategy)}
+            disabled={isUploading}
+            className="bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+          >
+            <option value="auto">Auto-Detect Structure</option>
+            <option value="recursive">Recursive Character (500/100)</option>
+            <option value="semantic">Semantic Sentence Similarity</option>
+            <option value="markdown">Markdown &amp; Header-Aware</option>
+          </select>
+        </div>
+        <p className="text-[11px] text-zinc-500">
+          {selectedStrategy === 'auto' && 'Automatically picks optimal chunker based on file format & headers.'}
+          {selectedStrategy === 'recursive' && 'Hierarchically splits text on paragraphs, sentences, and words.'}
+          {selectedStrategy === 'semantic' && 'Detects semantic topic shifts using sentence similarity analysis.'}
+          {selectedStrategy === 'markdown' && 'Preserves heading breadcrumbs and section hierarchies.'}
+        </p>
+      </div>
+
+      {/* Upload Box */}
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -107,7 +141,7 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
       >
         <input
           type="file"
-          accept=".pdf,.docx,.txt"
+          accept=".pdf,.docx,.txt,.md"
           onChange={handleInputChange}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           disabled={isUploading}
@@ -115,7 +149,7 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
         {isUploading ? (
           <div className="flex flex-col items-center gap-2 py-2">
             <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
-            <p className="text-sm text-zinc-400">Processing document...</p>
+            <p className="text-sm text-zinc-400">Processing &amp; embedding chunks...</p>
             <div className="w-full bg-zinc-700 rounded-full h-1.5 mt-1">
               <div
                 className="bg-emerald-400 h-1.5 rounded-full transition-all duration-500"
@@ -129,7 +163,7 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
             <p className="text-sm text-zinc-400">
               Drop file here or <span className="text-emerald-400 font-medium">browse</span>
             </p>
-            <p className="text-xs text-zinc-600">PDF, DOCX, TXT supported</p>
+            <p className="text-xs text-zinc-600">PDF, DOCX, TXT, MD supported</p>
           </div>
         )}
       </div>

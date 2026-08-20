@@ -2,14 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { generateEmbedding } from '@/lib/embeddings'
-import { chunkText } from '@/lib/chunker'
+import { chunkDocument, ChunkingStrategy } from '@/lib/chunker'
 import { v4 as uuidv4 } from 'uuid'
-import path from 'path'
 
 async function extractText(buffer: Buffer, fileType: string): Promise<string> {
   switch (fileType) {
     case 'application/pdf': {
-      // Import the worker module first to polyfill browser APIs like DOMMatrix in Node.js
       const { CanvasFactory } = await import('pdf-parse/worker')
       const { PDFParse } = await import('pdf-parse')
       
@@ -18,12 +16,12 @@ async function extractText(buffer: Buffer, fileType: string): Promise<string> {
         disableWorker: true,
         verbosity: 0,
         CanvasFactory
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any)
       
       const result = await parser.getText()
       const text = result.text
       
-      // Clean up to release memory
       if (typeof parser.destroy === 'function') {
         await parser.destroy()
       }
@@ -37,6 +35,7 @@ async function extractText(buffer: Buffer, fileType: string): Promise<string> {
       const result = await mammoth.extractRawText({ buffer })
       return result.value
     }
+    case 'text/markdown':
     case 'text/plain': {
       return buffer.toString('utf-8')
     }
@@ -47,7 +46,7 @@ async function extractText(buffer: Buffer, fileType: string): Promise<string> {
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Authenticate the user
+    // 1. Authenticate user
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -55,9 +54,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // 2. Get the file from the request
+    // 2. Extract file and optional chunking strategy
     const formData = await request.formData()
     const file = formData.get('file') as File
+    const strategy = (formData.get('strategy') as ChunkingStrategy) || 'auto'
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
@@ -81,10 +81,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Could not extract any text from the file.' }, { status: 400 })
     }
 
-    // 4. Use admin client to bypass RLS for inserting chunks
+    // 4. Save document metadata
     const adminClient = createAdminClient()
-
-    // 5. Insert document metadata
     const documentId = uuidv4()
     const { error: docError } = await adminClient
       .from('documents')
@@ -101,17 +99,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to save document metadata.' }, { status: 500 })
     }
 
-    // 6. Chunk the text
-    const chunks = chunkText(text)
+    // 5. Multi-Strategy Chunking
+    const chunks = await chunkDocument(text, {
+      strategy,
+      embeddingFn: generateEmbedding
+    })
 
-    // 7. Generate embeddings and store chunks
+    // 6. Generate embeddings and store chunk records
     const chunkRecords = []
     for (let i = 0; i < chunks.length; i++) {
-      const embedding = await generateEmbedding(chunks[i])
+      const embedding = await generateEmbedding(chunks[i].content)
       chunkRecords.push({
         document_id: documentId,
         chunk_index: i,
-        content: chunks[i],
+        content: chunks[i].content,
         embedding: embedding,
       })
     }
@@ -123,8 +124,6 @@ export async function POST(request: NextRequest) {
 
     if (chunkError) {
       console.error('Chunk insert error:', chunkError)
-      console.error('Error details:', JSON.stringify(chunkError, null, 2))
-      // Cleanup the document record if chunks failed
       await adminClient.from('documents').delete().eq('id', documentId)
       return NextResponse.json({ 
         error: 'Failed to process document chunks.',
@@ -138,6 +137,7 @@ export async function POST(request: NextRequest) {
         id: documentId,
         name: fileName,
         chunks: chunks.length,
+        strategy: chunks[0]?.strategy || strategy
       },
     })
   } catch (e: unknown) {
