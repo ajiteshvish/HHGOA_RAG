@@ -1,4 +1,4 @@
-import { createAdminClient } from '@/lib/supabase-admin'
+import { searchSimilarChunks } from '@/lib/db'
 import { generateEmbedding } from '@/lib/embeddings'
 import { evaluateInputGuardrails, evaluateRetrievalGuardrails } from '@/lib/guardrails'
 import { withRetry, RagCitation, LatencyBreakdown } from '@/lib/harness'
@@ -39,7 +39,7 @@ Rules:
 - If information is not in the context, explicitly state so.`
 
 /**
- * Executes low-latency grounded RAG pipeline with stage-by-stage instrumentation.
+ * Executes low-latency grounded RAG pipeline with stage-by-stage instrumentation on Neon DB.
  */
 export async function executeRAGPipeline(
   options: RAGEngineOptions
@@ -75,27 +75,25 @@ export async function executeRAGPipeline(
   const queryEmbedding = await generateEmbedding(query)
   latency.embedding_ms = Math.round(performance.now() - tEmbedStart)
 
-  // 3. Supabase pgvector Similarity Retrieval
+  // 3. Neon DB pgvector Similarity Retrieval
   const tRetrievalStart = performance.now()
-  const adminClient = createAdminClient()
   
-  const { data: rawChunks, error: searchError } = await withRetry(async () => {
-    return await adminClient.rpc('match_document_chunks', {
-      query_embedding: queryEmbedding,
-      match_threshold: 0.35,
-      match_count: matchCount,
-      p_user_id: userId,
-    })
-  }, { maxRetries: 2, timeoutMs: 5000 })
-
-  latency.retrieval_ms = Math.round(performance.now() - tRetrievalStart)
-
-  if (searchError) {
-    console.error('Vector search error:', searchError)
-    throw new Error('Document retrieval failed.')
+  let chunks: RetrievedChunk[] = []
+  try {
+    chunks = await withRetry(async () => {
+      return await searchSimilarChunks({
+        userId,
+        queryEmbedding,
+        matchThreshold: 0.35,
+        matchCount
+      })
+    }, { maxRetries: 2, timeoutMs: 5000 })
+  } catch (searchError) {
+    console.error('Neon vector search error:', searchError)
+    throw new Error('Document retrieval failed from Neon DB.')
   }
 
-  const chunks: RetrievedChunk[] = rawChunks || []
+  latency.retrieval_ms = Math.round(performance.now() - tRetrievalStart)
 
   // 4. Evaluate Retrieval Guardrails & Similarity Threshold Gating
   const retrievalCheck = evaluateRetrievalGuardrails(chunks, {
@@ -118,7 +116,7 @@ export async function executeRAGPipeline(
     chunk_id: c.id,
     document_id: c.document_id,
     content: c.content.slice(0, 200) + (c.content.length > 200 ? '...' : ''),
-    similarity: parseFloat(c.similarity.toFixed(3))
+    similarity: parseFloat((c.similarity || 0).toFixed(3))
   }))
 
   // 5. Build Context and Invoke High-Speed Streaming LLM

@@ -1,26 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
-import { createAdminClient } from '@/lib/supabase-admin'
+import { getSessionUser } from '@/lib/auth'
+import { getDocumentsForUser, deleteDocumentById } from '@/lib/db'
 
-// GET /api/documents - list documents for the logged-in user
+// GET /api/documents - list documents for the logged-in user from Neon DB
 export async function GET() {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const user = await getSessionUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: documents, error } = await supabase
-      .from('documents')
-      .select('id, name, type, size, created_at')
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
+    const documents = await getDocumentsForUser(user.id)
     return NextResponse.json({ documents })
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'Unknown error'
@@ -28,13 +18,11 @@ export async function GET() {
   }
 }
 
-// DELETE /api/documents?id=xxx - delete a document and its chunks
+// DELETE /api/documents?id=xxx - delete a document and its chunks from Neon DB
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const user = await getSessionUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -45,23 +33,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'No document ID provided' }, { status: 400 })
     }
 
-    // Verify ownership
-    const { data: doc } = await supabase
-      .from('documents')
-      .select('id')
-      .eq('id', documentId)
-      .single()
-
-    if (!doc) {
-      return NextResponse.json({ error: 'Document not found' }, { status: 404 })
+    const deleted = await deleteDocumentById(documentId, user.id)
+    if (!deleted) {
+      return NextResponse.json({ error: 'Document not found or permission denied' }, { status: 404 })
     }
-
-    // Use admin client to delete chunks (bypasses RLS) then delete the doc
-    const adminClient = createAdminClient()
-
-    // Chunks will cascade-delete thanks to ON DELETE CASCADE, but let's be explicit
-    await adminClient.from('document_chunks').delete().eq('document_id', documentId)
-    await adminClient.from('documents').delete().eq('id', documentId)
 
     return NextResponse.json({ success: true })
   } catch (e: unknown) {

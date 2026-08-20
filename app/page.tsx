@@ -96,7 +96,7 @@ export default function Home() {
 
         {/* Footer */}
         <div className="mt-20 text-center text-xs text-zinc-600">
-          Built with Next.js • Supabase • pgvector • OpenRouter
+          Built with Next.js • Neon DB (PostgreSQL) • pgvector • Groq
         </div>
       </div>
     </div>

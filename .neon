@@ -1,8 +1,4 @@
 {
-  "_init": {
-    "features": [
-      "database",
-      "auth"
-    ]
-  }
+  "orgId": "org-fancy-union-59401394",
+  "projectId": "late-smoke-10598002"
 }

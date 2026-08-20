@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
-import { createAdminClient } from '@/lib/supabase-admin'
+import { getSessionUser } from '@/lib/auth'
+import { insertDocument, insertDocumentChunks } from '@/lib/db'
 import { generateEmbedding } from '@/lib/embeddings'
 import { chunkDocument, ChunkingStrategy } from '@/lib/chunker'
 import { v4 as uuidv4 } from 'uuid'
@@ -46,11 +46,9 @@ async function extractText(buffer: Buffer, fileType: string): Promise<string> {
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Authenticate user
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    // 1. Authenticate user from session
+    const user = await getSessionUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -81,23 +79,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Could not extract any text from the file.' }, { status: 400 })
     }
 
-    // 4. Save document metadata
-    const adminClient = createAdminClient()
+    // 4. Save document metadata to Neon DB
     const documentId = uuidv4()
-    const { error: docError } = await adminClient
-      .from('documents')
-      .insert({
-        id: documentId,
-        user_id: user.id,
-        name: fileName,
-        type: fileType,
-        size: buffer.length,
-      })
-
-    if (docError) {
-      console.error('Document insert error:', docError)
-      return NextResponse.json({ error: 'Failed to save document metadata.' }, { status: 500 })
-    }
+    await insertDocument({
+      id: documentId,
+      userId: user.id,
+      name: fileName,
+      type: fileType,
+      size: buffer.length
+    })
 
     // 5. Multi-Strategy Chunking
     const chunks = await chunkDocument(text, {
@@ -105,31 +95,20 @@ export async function POST(request: NextRequest) {
       embeddingFn: generateEmbedding
     })
 
-    // 6. Generate embeddings and store chunk records
+    // 6. Generate embeddings and store chunk records into Neon DB
     const chunkRecords = []
     for (let i = 0; i < chunks.length; i++) {
       const embedding = await generateEmbedding(chunks[i].content)
       chunkRecords.push({
-        document_id: documentId,
-        chunk_index: i,
+        documentId: documentId,
+        chunkIndex: i,
         content: chunks[i].content,
         embedding: embedding,
       })
     }
 
-    // Insert all chunks
-    const { error: chunkError } = await adminClient
-      .from('document_chunks')
-      .insert(chunkRecords)
-
-    if (chunkError) {
-      console.error('Chunk insert error:', chunkError)
-      await adminClient.from('documents').delete().eq('id', documentId)
-      return NextResponse.json({ 
-        error: 'Failed to process document chunks.',
-        details: chunkError.message
-      }, { status: 500 })
-    }
+    // Batch insert into Neon DB
+    await insertDocumentChunks(chunkRecords)
 
     return NextResponse.json({
       success: true,
@@ -141,7 +120,7 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (e: unknown) {
-    console.error('Upload error:', e)
+    console.error('Neon upload error:', e)
     const message = e instanceof Error ? e.message : 'Unknown error'
     return NextResponse.json({ error: message }, { status: 500 })
   }

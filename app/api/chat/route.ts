@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { getSessionUser } from '@/lib/auth'
 import { executeRAGPipeline } from '@/lib/rag-engine'
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Authenticate user
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    // 1. Authenticate user from session
+    const user = await getSessionUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -20,7 +18,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No query provided' }, { status: 400 })
     }
 
-    // 3. Execute low-latency RAG pipeline with guardrails & latency instrumentation
+    // 3. Execute low-latency RAG pipeline on Neon DB with guardrails & latency instrumentation
     const result = await executeRAGPipeline({
       userId: user.id,
       query: query.trim(),
