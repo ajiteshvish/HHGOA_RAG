@@ -113,19 +113,12 @@ export default function PromptBar({
   const [model, setModel] = useState(MODELS[0])
   const [attachments, setAttachments] = useState<string[]>([])
   const [active, setActive] = useState(0)
-  const [expanded, setExpanded] = useState(false)
-  const wide = expanded
   const [rowBox, setRowBox] = useState<{ top: number; height: number } | null>(null)
   const [engaged, setEngaged] = useState(false)
-  const [modelBox, setModelBox] = useState<{ top: number; height: number } | null>(null)
   const [modelHovered, setModelHovered] = useState<number | null>(null)
-  const [modelMenuLeft, setModelMenuLeft] = useState(0)
-  const [modelMenuBottom, setModelMenuBottom] = useState(0)
 
   const composerAnchorRef = useRef<HTMLDivElement>(null)
-  const controlsRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
-  const measureRef = useRef<HTMLSpanElement>(null)
   const modelRef = useRef<HTMLButtonElement>(null)
   const rowRefs = useRef<(HTMLButtonElement | null)[]>([])
   const modelRowRefs = useRef<(HTMLButtonElement | null)[]>([])
@@ -151,21 +144,6 @@ export default function PromptBar({
     if (target) setRowBox({ top: target.offsetTop, height: target.offsetHeight })
   }, [menu, query, active, rows.length])
 
-  const modelIndex = MODELS.findIndex(m => m.key === model.key)
-  useLayoutEffect(() => {
-    if (!modelOpen) return
-    const target = modelRowRefs.current[modelHovered ?? modelIndex]
-    if (target) setModelBox({ top: target.offsetTop, height: target.offsetHeight })
-  }, [modelOpen, modelHovered, modelIndex])
-
-  useLayoutEffect(() => {
-    if (!modelOpen || !composerAnchorRef.current || !modelRef.current) return
-    const anchorRect = composerAnchorRef.current.getBoundingClientRect()
-    const triggerRect = modelRef.current.getBoundingClientRect()
-    setModelMenuLeft(Math.max(0, Math.min(triggerRect.left - anchorRect.left, anchorRect.width - 176)))
-    setModelMenuBottom(anchorRect.bottom - triggerRect.top + 8)
-  }, [modelOpen, wide, model.name])
-
   useEffect(() => {
     if (!modelOpen) setModelHovered(null)
   }, [modelOpen])
@@ -175,28 +153,15 @@ export default function PromptBar({
     setModelOpen(false)
   }
 
+  // Auto-resize textarea smoothly
   useLayoutEffect(() => {
     const input = inputRef.current
-    const controls = controlsRef.current
-    const measure = measureRef.current
-    const modelButton = modelRef.current
-    if (!input || !controls || !measure || !modelButton) return
+    if (!input) return
 
-    const fixedControlsWidth = 28 * 3 + modelButton.offsetWidth
-    const inlineGaps = 4 * 4
-    const inlineInputWidth = controls.clientWidth - fixedControlsWidth - inlineGaps
-    const needsFullWidth = draft.includes('\n') || measure.offsetWidth + 8 > inlineInputWidth
-    if (needsFullWidth !== expanded) {
-      setExpanded(needsFullWidth)
-    }
-
-    const minHeight = 28
-    const maxHeight = 100
-    input.style.height = '0px'
-    const contentHeight = input.scrollHeight
-    input.style.height = `${Math.min(Math.max(contentHeight, minHeight), maxHeight)}px`
-    input.style.overflowY = contentHeight > maxHeight ? 'auto' : 'hidden'
-  }, [draft, expanded])
+    input.style.height = 'auto'
+    const nextHeight = Math.min(Math.max(input.scrollHeight, 24), 120)
+    input.style.height = `${nextHeight}px`
+  }, [draft])
 
   useEffect(() => {
     if (!modelOpen && !plusOpen) return
@@ -265,7 +230,7 @@ export default function PromptBar({
         {menu && (
           <div
             onMouseLeave={() => setEngaged(false)}
-            className="absolute inset-x-0 bottom-full z-20 mb-2 rounded-lg bg-[#171305] border-3 border-black p-1.5 shadow-[6px_6px_0_0_#000] backdrop-blur-md"
+            className="absolute inset-x-0 bottom-full z-30 mb-2 rounded-xl bg-[#171305] border-3 border-black p-1.5 shadow-[6px_6px_0_0_#000] backdrop-blur-md max-h-56 overflow-y-auto"
             style={{ animation: 'pop-in 180ms cubic-bezier(0.23,1,0.32,1) both', transformOrigin: 'bottom center' }}
           >
             <span
@@ -294,7 +259,7 @@ export default function PromptBar({
                     setEngaged(true)
                   }}
                   onClick={() => pick(row)}
-                  className="relative z-10 flex h-8 w-full items-center gap-2 rounded px-2 text-left hover:bg-[#d2691e] hover:text-black transition-colors cursor-pointer group"
+                  className="relative z-10 flex h-8.5 w-full items-center gap-2 rounded-lg px-2 text-left hover:bg-[#d2691e] hover:text-black transition-colors cursor-pointer group"
                 >
                   {source && (
                     <span className="flex size-4 shrink-0 items-center justify-center text-[#ffdb3c] group-hover:text-black">
@@ -319,14 +284,12 @@ export default function PromptBar({
           </div>
         )}
 
-        {/* Model menu */}
+        {/* Model Menu Dropdown */}
         {modelOpen && (
           <div
             onMouseLeave={() => setModelHovered(null)}
-            className="absolute z-20 w-44 rounded-lg bg-[#171305] border-3 border-black p-1.5 shadow-[6px_6px_0_0_#000] backdrop-blur-md"
+            className="absolute left-0 bottom-full z-30 mb-2 w-48 rounded-xl bg-[#171305] border-3 border-black p-1.5 shadow-[6px_6px_0_0_#000] backdrop-blur-md"
             style={{
-              left: modelMenuLeft,
-              bottom: modelMenuBottom,
               animation: 'pop-in 180ms cubic-bezier(0.23,1,0.32,1) both',
               transformOrigin: 'bottom left',
             }}
@@ -344,10 +307,10 @@ export default function PromptBar({
                   selectModel(m)
                   inputRef.current?.focus()
                 }}
-                className="relative z-10 flex h-7.5 w-full items-center gap-2 rounded px-2 text-left hover:bg-[#d2691e] hover:text-black transition-colors cursor-pointer group"
+                className="relative z-10 flex h-8 w-full items-center gap-2 rounded-lg px-2 text-left hover:bg-[#d2691e] hover:text-black transition-colors cursor-pointer group"
               >
                 <span className="min-w-0 flex-1 truncate text-xs font-bold text-zinc-200 group-hover:text-black">{m.name}</span>
-                <span className="shrink-0 text-[10px] text-zinc-400 group-hover:text-black">{m.tag}</span>
+                <span className="shrink-0 text-[10px] text-zinc-400 group-hover:text-black font-mono">{m.tag}</span>
                 <span className={`shrink-0 text-[#ffdb3c] group-hover:text-black ${m.key === model.key ? '' : 'invisible'}`}>
                   <Icon size={12} strokeWidth={2.5}>
                     <path d="M20 6L9 17l-5-5" />
@@ -358,46 +321,11 @@ export default function PromptBar({
           </div>
         )}
 
-        {/* Composer Card */}
-        <div
-          className="relative isolate flex flex-col overflow-hidden border-3 border-black bg-[#1f1c0b] shadow-[4px_4px_0_0_#000] rounded-lg p-2 transition-all focus-within:border-[#d2691e]"
-        >
-          <span
-            ref={measureRef}
-            aria-hidden="true"
-            className="pointer-events-none absolute invisible whitespace-pre text-xs leading-[18px]"
-          >
-            {draft}
-          </span>
-
-          <div
-            ref={controlsRef}
-            className={`grid items-end gap-x-1.5 gap-y-1.5 ${
-              wide
-                ? 'grid-cols-[28px_auto_minmax(0,1fr)_auto_28px]'
-                : 'grid-cols-[28px_minmax(0,1fr)_auto_auto_28px]'
-            }`}
-          >
-            {/* Plus / Attach & Sources button */}
-            <button
-              type="button"
-              aria-label="Add attachments and sources"
-              aria-expanded={plusOpen}
-              onClick={() => {
-                setModelOpen(false)
-                setPlusOpen(current => !current)
-                inputRef.current?.focus()
-              }}
-              className={`flex size-7 shrink-0 items-center justify-center justify-self-start text-[#ffdb3c] hover:bg-[#d2691e] hover:text-black border-2 border-black rounded shadow-[1px_1px_0_0_#000] transition-all cursor-pointer ${
-                plusOpen ? 'bg-[#d2691e] text-black' : 'bg-[#171305]'
-              } ${wide ? 'col-start-1 row-start-2' : 'col-start-1 row-start-1'}`}
-            >
-              <Icon size={15} strokeWidth={2.5}>
-                <path d="M12 5v14M5 12h14" />
-              </Icon>
-            </button>
-
-            {/* Input Textarea */}
+        {/* ChatGPT-Native Mobile Responsive Composer Box */}
+        <div className="flex flex-col border-3 border-black bg-[#1f1c0b] shadow-[4px_4px_0_0_#000] rounded-xl p-2.5 transition-all focus-within:border-[#d2691e] gap-2">
+          
+          {/* Row 1: Full-Width Multiline Textarea */}
+          <div className="w-full">
             <textarea
               ref={inputRef}
               rows={1}
@@ -432,58 +360,78 @@ export default function PromptBar({
                 }
               }}
               placeholder={placeholder}
-              aria-label="Prompt"
-              className={`min-h-7 px-1 py-[5px] text-xs sm:text-sm leading-[18px] min-w-0 w-full resize-none bg-transparent text-[#f5f5f0] outline-none font-bold placeholder:text-zinc-500 font-['Be_Vietnam_Pro',sans-serif] ${
-                wide ? 'col-span-full col-start-1 row-start-1' : 'col-start-2 row-start-1'
-              }`}
+              aria-label="Ask Voice RAG"
+              className="w-full resize-none bg-transparent text-[#f5f5f0] text-xs sm:text-sm leading-relaxed outline-none font-bold placeholder:text-zinc-500 font-['Be_Vietnam_Pro',sans-serif] px-1 py-1 max-h-28 overflow-y-auto"
             />
+          </div>
 
-            {/* Model Picker */}
-            <button
-              ref={modelRef}
-              type="button"
-              aria-expanded={modelOpen}
-              aria-label="Choose model"
-              onClick={() => {
-                setPlusOpen(false)
-                setModelOpen(current => !current)
-              }}
-              className={`flex h-7 shrink-0 items-center gap-1 px-2 text-[11px] font-bold text-black bg-[#ffdb3c] border-2 border-black rounded shadow-[2px_2px_0_0_#000] hover:bg-white transition-all cursor-pointer ${
-                wide ? 'col-start-2 row-start-2 justify-self-start' : 'col-start-3 row-start-1'
-              }`}
-            >
-              ⚡ {model.name}
-              <Icon size={10} strokeWidth={2.5}>
-                <path d="M6 9l6 6 6-6" />
-              </Icon>
-            </button>
+          {/* Row 2: Controls Toolbar (ChatGPT Mobile Pattern) */}
+          <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-black/50">
+            {/* Left Controls: Plus + Model Selector */}
+            <div className="flex items-center gap-1.5 min-w-0">
+              {/* Plus Button */}
+              <button
+                type="button"
+                aria-label="Add attachments and sources"
+                aria-expanded={plusOpen}
+                onClick={() => {
+                  setModelOpen(false)
+                  setPlusOpen(current => !current)
+                  inputRef.current?.focus()
+                }}
+                className={`flex size-8 shrink-0 items-center justify-center text-[#ffdb3c] hover:bg-[#d2691e] hover:text-black border-2 border-black rounded-lg shadow-[1px_1px_0_0_#000] transition-all cursor-pointer ${
+                  plusOpen ? 'bg-[#d2691e] text-black' : 'bg-[#171305]'
+                }`}
+              >
+                <Icon size={15} strokeWidth={2.5}>
+                  <path d="M12 5v14M5 12h14" />
+                </Icon>
+              </button>
 
-            {/* Voice Input Recorder */}
-            <div className={wide ? 'col-start-4 row-start-2' : 'col-start-4 row-start-1'}>
+              {/* Model Picker Pill */}
+              <button
+                ref={modelRef}
+                type="button"
+                aria-expanded={modelOpen}
+                aria-label="Choose model"
+                onClick={() => {
+                  setPlusOpen(false)
+                  setModelOpen(current => !current)
+                }}
+                className="flex h-8 shrink-0 items-center gap-1 px-2.5 text-[11px] font-bold text-black bg-[#ffdb3c] border-2 border-black rounded-lg shadow-[2px_2px_0_0_#000] hover:bg-white transition-all cursor-pointer truncate max-w-[130px] sm:max-w-none"
+              >
+                <span className="truncate">⚡ {model.name}</span>
+                <Icon size={10} strokeWidth={2.5}>
+                  <path d="M6 9l6 6 6-6" />
+                </Icon>
+              </button>
+            </div>
+
+            {/* Right Controls: Mic + Send Button */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* Voice Microphone */}
               <VoiceRecorder
                 onTranscriptionComplete={handleVoiceTranscription}
                 disabled={isLoading}
               />
-            </div>
 
-            {/* Tactile Send Button */}
-            <button
-              type="button"
-              aria-label="Send"
-              disabled={!canSend}
-              onClick={send}
-              className={`flex size-7 shrink-0 items-center justify-center rounded border-2 border-black shadow-[2px_2px_0_0_#000] transition-all cursor-pointer font-bold ${
-                wide ? 'col-start-5 row-start-2' : 'col-start-5 row-start-1'
-              }`}
-              style={{
-                background: canSend ? '#e91e63' : '#393522',
-                color: canSend ? '#ffffff' : '#71717a',
-              }}
-            >
-              <Icon size={14} strokeWidth={2.5}>
-                <path d="M12 19V5M5 12l7-7 7 7" />
-              </Icon>
-            </button>
+              {/* Send Button */}
+              <button
+                type="button"
+                aria-label="Send"
+                disabled={!canSend}
+                onClick={send}
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg border-2 border-black shadow-[2px_2px_0_0_#000] transition-all cursor-pointer font-bold disabled:opacity-40"
+                style={{
+                  background: canSend ? '#e91e63' : '#2b2715',
+                  color: canSend ? '#ffffff' : '#71717a',
+                }}
+              >
+                <Icon size={15} strokeWidth={2.5}>
+                  <path d="M12 19V5M5 12l7-7 7 7" />
+                </Icon>
+              </button>
+            </div>
           </div>
         </div>
       </div>

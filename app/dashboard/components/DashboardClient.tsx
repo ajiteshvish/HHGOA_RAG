@@ -46,52 +46,43 @@ export default function DashboardClient({ userEmail }: { userEmail: string }) {
   }
 
   return (
-    <div className="flex flex-col h-[100dvh] w-full bg-[#0e0e11] overflow-hidden">
-      {/* Top Navigation Bar */}
-      <header className="flex shrink-0 items-center justify-between px-4 sm:px-6 py-3 border-b-4 border-black bg-[#171305] text-[#f5f5f0] z-30">
-        <div className="flex items-center gap-3">
-          {/* Mobile Drawer Trigger */}
+    <div className="flex flex-col h-[100dvh] w-full bg-[#120e03] overflow-hidden font-['Space_Grotesk',sans-serif]">
+      {/* Top Navigation Bar — Mobile Optimized */}
+      <header className="flex shrink-0 items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3 border-b-3 sm:border-b-4 border-black bg-[#171305] text-[#f5f5f0] z-30">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Mobile Drawer Trigger with Badge */}
           <button
             type="button"
             onClick={() => setIsMobileDrawerOpen(!isMobileDrawerOpen)}
-            className="md:hidden flex items-center justify-center p-2 rounded-lg bg-[#d2691e] text-black border-2 border-black font-bold shadow-[2px_2px_0_0_#000] cursor-pointer"
+            className="md:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#d2691e] text-black border-2 border-black font-bold shadow-[2px_2px_0_0_#000] cursor-pointer text-xs"
             title="Toggle Documents Drawer"
           >
             {isMobileDrawerOpen ? <X className="size-4" /> : <Menu className="size-4" />}
+            <span className="text-[10px] font-mono font-bold">Docs ({documents.length})</span>
           </button>
 
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-[#d2691e] border-2 border-black flex items-center justify-center shadow-[2px_2px_0_0_#000] font-bold text-black text-sm group-hover:scale-105 transition-transform">
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#d2691e] border-2 border-black flex items-center justify-center shadow-[2px_2px_0_0_#000] font-bold text-black text-xs sm:text-sm group-hover:scale-105 transition-transform">
               ⚡
             </div>
             <div>
-              <h1 className="text-sm sm:text-base font-['Anton','Anybody',sans-serif] tracking-tight uppercase text-retro-3d-pop-sm">
+              <h1 className="text-xs sm:text-base font-bold tracking-tight uppercase text-retro-3d-pop-sm">
                 HH GOA • VOICE RAG
               </h1>
-              <p className="text-[10px] text-zinc-400 font-['Space_Grotesk',sans-serif] hidden sm:block">
+              <p className="text-[10px] text-zinc-400 font-mono hidden sm:block">
                 Sub-200ms Qwen 3.6 &amp; Neon pgvector
               </p>
             </div>
           </Link>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-4">
-          {/* Mobile quick upload badge */}
-          <button
-            type="button"
-            onClick={() => setIsMobileDrawerOpen(true)}
-            className="md:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 font-medium cursor-pointer"
-          >
-            <UploadCloud className="size-3.5 text-emerald-400" />
-            <span>Docs ({documents.length})</span>
-          </button>
-
+        <div className="flex items-center gap-2">
           <span className="text-xs text-zinc-400 font-mono hidden lg:block">{userEmail}</span>
 
           <form action="/api/auth/signout" method="POST">
             <button
               type="submit"
-              className="flex items-center gap-1.5 text-xs text-black font-bold bg-[#e91e63] hover:bg-white px-3 py-1.5 rounded border-2 border-black shadow-[2px_2px_0_0_#000] transition-all cursor-pointer"
+              className="flex items-center gap-1.5 text-xs text-black font-bold bg-[#e91e63] hover:bg-white px-2.5 sm:px-3 py-1.5 rounded-lg border-2 border-black shadow-[2px_2px_0_0_#000] transition-all cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Sign out</span>
@@ -152,7 +143,7 @@ export default function DashboardClient({ userEmail }: { userEmail: string }) {
                 <button
                   type="button"
                   onClick={() => setIsMobileDrawerOpen(false)}
-                  className="p-1 rounded bg-zinc-800 text-zinc-300 hover:text-white"
+                  className="p-1 rounded-lg bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700"
                 >
                   <X className="size-4" />
                 </button>
@@ -178,8 +169,8 @@ export default function DashboardClient({ userEmail }: { userEmail: string }) {
           </div>
         )}
 
-        {/* Chat Area - Fits 100% Screen */}
-        <div className="flex-1 flex flex-col min-w-0 h-full p-2 sm:p-4 bg-[#0e0e11]">
+        {/* Chat Area - Fits 100% Mobile Screen */}
+        <div className="flex-1 flex flex-col min-w-0 h-full p-2 sm:p-4 bg-[#120e03]">
           <ChatInterface hasDocuments={documents.length > 0} />
         </div>
       </div>

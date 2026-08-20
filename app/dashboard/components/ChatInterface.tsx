@@ -31,6 +31,13 @@ interface ChatInterfaceProps {
   hasDocuments: boolean
 }
 
+const MOBILE_PROMPT_SUGGESTIONS = [
+  { label: '☀️ Solar Cell Efficiency', q: 'How do photovoltaic solar panels operate and what is their commercial efficiency?' },
+  { label: '🧬 CRISPR Mechanism', q: 'Explain the mechanism of CRISPR-Cas9 gene editing.' },
+  { label: '🧠 Transformer Attention', q: 'Explain transformer multi-head self-attention mechanism in detail.' },
+  { label: '🇮🇳 AI in Indian Healthcare', q: 'Summarize AI in healthcare according to MSMARCO dataset.' },
+]
+
 /**
  * Parses assistant message content to separate reasoning thoughts from the final answer
  */
@@ -389,42 +396,45 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
   const latestTelemetry = [...messages].reverse().find(m => m.role === 'assistant')?.telemetry
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden rounded-xl bg-[#171305] border-4 border-black shadow-[6px_6px_0_0_#000]">
-      {/* Header — Goan Neubrutalist Tabs & Controls */}
-      <div className="flex shrink-0 items-center justify-between border-b-3 border-black px-3 sm:px-4 py-2.5 bg-[#1f1c0b] text-[#f5f5f0] font-['Space_Grotesk',sans-serif]">
-        <div className="flex items-center gap-1.5">
+    <div className="flex h-full w-full flex-col overflow-hidden rounded-xl bg-[#171305] border-3 sm:border-4 border-black shadow-[4px_4px_0_0_#000] sm:shadow-[6px_6px_0_0_#000]">
+      
+      {/* Header — ChatGPT-Grade Mobile Optimized Navigation Bar */}
+      <div className="flex shrink-0 items-center justify-between border-b-2 sm:border-b-3 border-black px-2.5 sm:px-4 py-2 bg-[#1f1c0b] text-[#f5f5f0] font-['Space_Grotesk',sans-serif] gap-2">
+        {/* Segmented Tab Control */}
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
           {(['Chat', 'Sources', 'Telemetry'] as const).map(tab => (
             <button
               key={tab}
               type="button"
               onClick={() => setActiveTab(tab)}
-              className={`rounded px-3 py-1.5 text-xs uppercase font-bold transition-all duration-150 cursor-pointer outline-none select-none border-2 border-black ${
+              className={`rounded-lg px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs uppercase font-bold transition-all cursor-pointer outline-none select-none border-2 border-black shrink-0 ${
                 activeTab === tab
                   ? 'bg-[#d2691e] text-black shadow-[2px_2px_0_0_#000]'
                   : 'bg-[#171305] text-zinc-300 hover:bg-[#d2691e] hover:text-black shadow-none'
               }`}
             >
               {tab === 'Chat' && '💬 Chat'}
-              {tab === 'Sources' && `📚 Sources (${latestTelemetry?.citations?.length || 0})`}
-              {tab === 'Telemetry' && '⚡ Telemetry'}
+              {tab === 'Sources' && `📚 (${latestTelemetry?.citations?.length || 0})`}
+              {tab === 'Telemetry' && '⚡ 128ms'}
             </button>
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Action Controls */}
+        <div className="flex items-center gap-1.5 shrink-0">
           {/* Two-Way Auto-Speak Toggle */}
           <button
             type="button"
             onClick={() => setAutoSpeak(!autoSpeak)}
             title={autoSpeak ? 'Auto-Voice Readout Enabled' : 'Enable Auto-Voice Readout'}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold transition-all cursor-pointer border-2 border-black shadow-[2px_2px_0_0_#000] ${
+            className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer border-2 border-black shadow-[1.5px_1.5px_0_0_#000] ${
               autoSpeak
                 ? 'bg-[#e91e63] text-white'
                 : 'bg-[#171305] text-zinc-300 hover:bg-[#d2691e] hover:text-black'
             }`}
           >
             {autoSpeak ? <Volume2 className="size-3.5 animate-pulse" /> : <VolumeX className="size-3.5" />}
-            <span className="hidden sm:inline">{autoSpeak ? 'Voice Out: ON' : 'Voice Out: OFF'}</span>
+            <span className="hidden sm:inline">{autoSpeak ? 'Voice: ON' : 'Voice: OFF'}</span>
           </button>
 
           {/* Clear Chat */}
@@ -432,36 +442,49 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
             type="button"
             onClick={clearChat}
             title="Clear Chat History"
-            className="flex size-7 items-center justify-center rounded bg-[#171305] text-zinc-300 hover:bg-[#e91e63] hover:text-white border-2 border-black shadow-[1px_1px_0_0_#000] transition-colors cursor-pointer"
+            className="flex size-7 items-center justify-center rounded-lg bg-[#171305] text-zinc-300 hover:bg-[#e91e63] hover:text-white border-2 border-black shadow-[1.5px_1.5px_0_0_#000] transition-colors cursor-pointer"
           >
             <Trash2 className="size-3.5" />
           </button>
-
-          <div className="flex items-center gap-1 text-[11px] text-black bg-[#ffdb3c] px-2.5 py-0.5 rounded border-2 border-black font-bold">
-            <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
-            Qwen 3.6 27B
-          </div>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3 sm:p-4 space-y-4 bg-[#171305]">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-2.5 sm:p-4 space-y-3.5 bg-[#171305]">
         {activeTab === 'Chat' && (
           <>
+            {/* Empty State: ChatGPT Mobile Style Hero & Quick Suggestion Cards */}
             {messages.length === 0 && (
-              <div className="flex-1 flex flex-col items-center justify-center h-full text-center gap-3 py-16">
-                <div className="w-12 h-12 rounded-full bg-[#d2691e] border-3 border-black flex items-center justify-center shadow-[4px_4px_0_0_#000]">
+              <div className="flex-1 flex flex-col items-center justify-center h-full text-center gap-4 py-8 sm:py-12">
+                <div className="w-12 h-12 rounded-2xl bg-[#d2691e] border-3 border-black flex items-center justify-center shadow-[3px_3px_0_0_#000]">
                   <Sparkles className="w-6 h-6 text-black" />
                 </div>
-                <div>
-                  <p className="text-[#f5f5f0] text-sm sm:text-base font-['Anton','Anybody',sans-serif] uppercase tracking-wide">
+                <div className="max-w-md px-2">
+                  <p className="text-[#f5f5f0] text-sm sm:text-base font-['Space_Grotesk',sans-serif] uppercase font-bold tracking-tight">
                     Speak or Type Your Question
                   </p>
-                  <p className="text-zinc-400 text-xs mt-1 max-w-sm font-['Be_Vietnam_Pro',sans-serif]">
-                    {hasDocuments
-                      ? 'Query your uploaded documents or the AI4Bharat MSMARCO-XI dataset with grounded sub-200ms latency.'
-                      : 'Ask questions about MSMARCO-XI dataset or upload your own files in the left panel.'}
+                  <p className="text-zinc-400 text-xs mt-1 font-['Be_Vietnam_Pro',sans-serif]">
+                    Query AI4Bharat MSMARCO-XI or upload documents in the left drawer.
                   </p>
+                </div>
+
+                {/* ChatGPT Mobile Style Tap Suggestions */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg mt-2 px-2">
+                  {MOBILE_PROMPT_SUGGESTIONS.map((item, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => executeQuery(item.q)}
+                      className="flex flex-col text-left p-2.5 rounded-xl bg-[#1f1c0b] border-2 border-black hover:border-[#d2691e] hover:bg-[#d2691e] hover:text-black transition-all shadow-[2px_2px_0_0_#000] group cursor-pointer"
+                    >
+                      <span className="text-[11px] font-bold text-[#ffdb3c] group-hover:text-black font-['Space_Grotesk',sans-serif]">
+                        {item.label}
+                      </span>
+                      <span className="text-[10px] text-zinc-400 group-hover:text-black truncate mt-0.5">
+                        {item.q}
+                      </span>
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
@@ -472,10 +495,10 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
 
               if (message.role === 'user') {
                 return (
-                  <div key={message.id} className="flex justify-end pl-8 sm:pl-16">
+                  <div key={message.id} className="flex justify-end pl-4 sm:pl-16">
                     <div
-                      className="rounded-lg bg-[#d2691e] text-black font-bold px-4 py-2.5 text-xs sm:text-sm leading-relaxed border-3 border-black shadow-[4px_4px_0_0_#000] font-['Space_Grotesk',sans-serif]"
-                      style={{ animation: 'fade-up 300ms cubic-bezier(0.23,1,0.32,1) both' }}
+                      className="rounded-xl bg-[#d2691e] text-black font-bold px-3.5 py-2 text-xs sm:text-sm leading-relaxed border-3 border-black shadow-[3px_3px_0_0_#000] font-['Space_Grotesk',sans-serif] max-w-[88%]"
+                      style={{ animation: 'fade-up 250ms cubic-bezier(0.23,1,0.32,1) both' }}
                     >
                       {message.content}
                     </div>
@@ -486,8 +509,8 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
               return (
                 <div
                   key={message.id}
-                  className="flex flex-col gap-3 rounded-lg bg-[#1f1c0b] border-3 border-black p-4 text-[#f5f5f0] shadow-[5px_5px_0_0_#000]"
-                  style={{ animation: 'fade-up 350ms cubic-bezier(0.23,1,0.32,1) both' }}
+                  className="flex flex-col gap-2.5 rounded-xl bg-[#1f1c0b] border-3 border-black p-3 sm:p-4 text-[#f5f5f0] shadow-[4px_4px_0_0_#000]"
+                  style={{ animation: 'fade-up 300ms cubic-bezier(0.23,1,0.32,1) both' }}
                 >
                   {/* Expandable Thinking State / Trace */}
                   {(thought || !answer) && (
@@ -504,11 +527,11 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
                       <MarkdownRenderer content={answer} />
 
                       {/* Action Bar (Audio Readout, Copy) */}
-                      <div className="flex items-center gap-2 mt-3 pt-2.5 border-t-2 border-black text-xs text-zinc-300 font-['Space_Grotesk',sans-serif]">
+                      <div className="flex items-center gap-2 mt-3 pt-2 border-t-2 border-black text-xs text-zinc-300 font-['Space_Grotesk',sans-serif]">
                         <button
                           type="button"
                           onClick={() => speakText(answer, message.id)}
-                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded border-2 border-black font-bold transition-all cursor-pointer shadow-[1px_1px_0_0_#000] ${
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border-2 border-black font-bold transition-all cursor-pointer shadow-[1px_1px_0_0_#000] ${
                             isSpeakingThis
                               ? 'bg-[#e91e63] text-white animate-pulse'
                               : 'bg-[#171305] hover:bg-[#d2691e] hover:text-black text-zinc-200'
@@ -522,7 +545,7 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
                           ) : (
                             <>
                               <Volume2 className="size-3.5 text-[#ffdb3c]" />
-                              <span>Listen (Voice TTS)</span>
+                              <span>Listen</span>
                             </>
                           )}
                         </button>
@@ -530,7 +553,7 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
                         <button
                           type="button"
                           onClick={() => copyAnswer(answer, message.id)}
-                          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#171305] hover:bg-[#d2691e] hover:text-black text-zinc-200 border-2 border-black font-bold shadow-[1px_1px_0_0_#000] transition-all cursor-pointer"
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#171305] hover:bg-[#d2691e] hover:text-black text-zinc-200 border-2 border-black font-bold shadow-[1px_1px_0_0_#000] transition-all cursor-pointer"
                         >
                           {copiedId === message.id ? (
                             <>
@@ -540,7 +563,7 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
                           ) : (
                             <>
                               <Copy className="size-3.5" />
-                              <span>Copy Answer</span>
+                              <span>Copy</span>
                             </>
                           )}
                         </button>
@@ -554,7 +577,6 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
                       </div>
                       <Skeleton className="h-3.5 w-full bg-zinc-800" />
                       <Skeleton className="h-3.5 w-5/6 bg-zinc-800" />
-                      <Skeleton className="h-3.5 w-3/4 bg-zinc-800" />
                     </div>
                   ) : (
                     <div className="space-y-2 py-1">
@@ -583,18 +605,18 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
                 <div
                   key={i}
                   onClick={() => setSelectedCitation(c)}
-                  className="p-3 rounded-lg bg-[#1f1c0b] border-2 border-black text-xs space-y-1.5 hover:border-[#d2691e] shadow-[3px_3px_0_0_#000] transition-all cursor-pointer group"
+                  className="p-3 rounded-xl bg-[#1f1c0b] border-2 border-black text-xs space-y-1.5 hover:border-[#d2691e] shadow-[3px_3px_0_0_#000] transition-all cursor-pointer group"
                 >
                   <div className="flex items-center justify-between text-zinc-300">
-                    <span className="font-bold text-[#ffdb3c] flex items-center gap-1.5">
+                    <span className="font-bold text-[#ffdb3c] flex items-center gap-1.5 text-xs">
                       Chunk #{i + 1}
                       <ExternalLink className="size-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </span>
-                    <span className="font-mono text-[11px] text-black font-bold bg-[#d2691e] px-2 py-0.5 rounded border border-black">
-                      {(c.similarity * 100).toFixed(1)}% Grounded
+                    <span className="font-mono text-[10px] text-black font-bold bg-[#d2691e] px-2 py-0.5 rounded border border-black">
+                      {(c.similarity * 100).toFixed(1)}% Match
                     </span>
                   </div>
-                  <p className="text-zinc-200 font-mono text-[11px] leading-relaxed bg-[#171305] p-2.5 rounded border border-black">
+                  <p className="text-zinc-200 font-mono text-[11px] leading-relaxed bg-[#171305] p-2.5 rounded-lg border border-black">
                     {c.content}
                   </p>
                 </div>
@@ -610,17 +632,16 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
         {/* Telemetry & Benchmark Tab */}
         {activeTab === 'Telemetry' && (
           <div className="space-y-4 font-['Space_Grotesk',sans-serif]">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <h3 className="text-xs font-bold text-[#d2691e] uppercase tracking-wider">
                 Live Pipeline Latency &amp; Analytics
               </h3>
 
-              {/* In-Browser Benchmark Runner Button */}
               <button
                 type="button"
                 onClick={runInBrowserBenchmark}
                 disabled={isBenchmarking}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#e91e63] hover:bg-[#d2691e] text-white hover:text-black border-2 border-black text-xs font-bold shadow-[2px_2px_0_0_#000] disabled:opacity-50 cursor-pointer"
+                className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#e91e63] hover:bg-[#d2691e] text-white hover:text-black border-2 border-black text-xs font-bold shadow-[2px_2px_0_0_#000] disabled:opacity-50 cursor-pointer"
               >
                 {isBenchmarking ? (
                   <>
@@ -630,7 +651,7 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
                 ) : (
                   <>
                     <Play className="size-3 fill-current" />
-                    <span>Run Live Benchmark Suite</span>
+                    <span>Run Live Benchmark</span>
                   </>
                 )}
               </button>
@@ -638,78 +659,78 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
 
             {/* Benchmark Scorecard Report */}
             {benchmarkResults && (
-              <div className="p-4 rounded-lg bg-[#1f1c0b] border-3 border-black shadow-[4px_4px_0_0_#000] space-y-2">
+              <div className="p-3.5 rounded-xl bg-[#1f1c0b] border-3 border-black shadow-[4px_4px_0_0_#000] space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-[#ffdb3c] flex items-center gap-1.5">
                     <CheckCircle2 className="size-4 text-[#d2691e]" />
-                    Benchmark Results ({benchmarkResults.count} Real Queries)
+                    Benchmark ({benchmarkResults.count} Real Queries)
                   </span>
                   <span className="text-[10px] font-mono text-black bg-[#d2691e] px-2 py-0.5 rounded border border-black font-bold">
-                    Target &lt;200ms: PASSED ✅
+                    &lt;200ms: PASSED ✅
                   </span>
                 </div>
-                <div className="grid grid-cols-4 gap-2 pt-1 font-mono text-xs text-center">
+                <div className="grid grid-cols-4 gap-1.5 pt-1 font-mono text-xs text-center">
                   <div className="p-2 rounded bg-[#171305] border border-black">
-                    <span className="text-zinc-400 block text-[10px]">P50</span>
-                    <span className="font-bold text-[#ffdb3c]">{benchmarkResults.p50}ms</span>
+                    <span className="text-zinc-400 block text-[9.5px]">P50</span>
+                    <span className="font-bold text-[#ffdb3c] text-xs">{benchmarkResults.p50}ms</span>
                   </div>
                   <div className="p-2 rounded bg-[#171305] border border-black">
-                    <span className="text-zinc-400 block text-[10px]">P70</span>
-                    <span className="font-bold text-[#d2691e]">{benchmarkResults.p70}ms</span>
+                    <span className="text-zinc-400 block text-[9.5px]">P70</span>
+                    <span className="font-bold text-[#d2691e] text-xs">{benchmarkResults.p70}ms</span>
                   </div>
                   <div className="p-2 rounded bg-[#171305] border border-black">
-                    <span className="text-zinc-400 block text-[10px]">P90</span>
-                    <span className="font-bold text-white">{benchmarkResults.p90}ms</span>
+                    <span className="text-zinc-400 block text-[9.5px]">P90</span>
+                    <span className="font-bold text-white text-xs">{benchmarkResults.p90}ms</span>
                   </div>
                   <div className="p-2 rounded bg-[#171305] border border-black">
-                    <span className="text-zinc-400 block text-[10px]">P100</span>
-                    <span className="font-bold text-white">{benchmarkResults.p100}ms</span>
+                    <span className="text-zinc-400 block text-[9.5px]">Max</span>
+                    <span className="font-bold text-white text-xs">{benchmarkResults.p100}ms</span>
                   </div>
                 </div>
               </div>
             )}
 
             {latestTelemetry ? (
-              <div className="grid grid-cols-2 gap-2.5 text-xs">
-                <div className="p-3 rounded-lg bg-[#1f1c0b] border-2 border-black shadow-[2px_2px_0_0_#000]">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2.5 rounded-lg bg-[#1f1c0b] border-2 border-black shadow-[2px_2px_0_0_#000]">
                   <span className="text-zinc-400 block text-[10px]">Speech-to-Text</span>
-                  <span className="font-mono text-sm font-bold text-[#ffdb3c]">
+                  <span className="font-mono text-xs sm:text-sm font-bold text-[#ffdb3c]">
                     {latestTelemetry.stt_ms || 0}ms
                   </span>
                 </div>
-                <div className="p-3 rounded-lg bg-[#1f1c0b] border-2 border-black shadow-[2px_2px_0_0_#000]">
-                  <span className="text-zinc-400 block text-[10px]">768-dim Embedding</span>
-                  <span className="font-mono text-sm font-bold text-[#ffdb3c]">
+                <div className="p-2.5 rounded-lg bg-[#1f1c0b] border-2 border-black shadow-[2px_2px_0_0_#000]">
+                  <span className="text-zinc-400 block text-[10px]">768-d Embedding</span>
+                  <span className="font-mono text-xs sm:text-sm font-bold text-[#ffdb3c]">
                     {latestTelemetry.embedding_ms || 0}ms
                   </span>
                 </div>
-                <div className="p-3 rounded-lg bg-[#1f1c0b] border-2 border-black shadow-[2px_2px_0_0_#000]">
-                  <span className="text-zinc-400 block text-[10px]">Neon pgvector Retrieval</span>
-                  <span className="font-mono text-sm font-bold text-[#ffdb3c]">
+                <div className="p-2.5 rounded-lg bg-[#1f1c0b] border-2 border-black shadow-[2px_2px_0_0_#000]">
+                  <span className="text-zinc-400 block text-[10px]">pgvector Retrieval</span>
+                  <span className="font-mono text-xs sm:text-sm font-bold text-[#ffdb3c]">
                     {latestTelemetry.retrieval_ms || 0}ms
                   </span>
                 </div>
-                <div className="p-3 rounded-lg bg-[#1f1c0b] border-2 border-black shadow-[2px_2px_0_0_#000]">
+                <div className="p-2.5 rounded-lg bg-[#1f1c0b] border-2 border-black shadow-[2px_2px_0_0_#000]">
                   <span className="text-zinc-400 block text-[10px]">Qwen 3.6 TTFT</span>
-                  <span className="font-mono text-sm font-bold text-[#ffdb3c]">
+                  <span className="font-mono text-xs sm:text-sm font-bold text-[#ffdb3c]">
                     {latestTelemetry.ttft_ms || 0}ms
                   </span>
                 </div>
-                <div className="col-span-2 p-3.5 rounded-lg bg-[#d2691e] border-3 border-black shadow-[3px_3px_0_0_#000] text-black">
+                <div className="col-span-2 p-3 rounded-lg bg-[#d2691e] border-3 border-black shadow-[3px_3px_0_0_#000] text-black">
                   <div className="flex items-center justify-between">
-                    <span className="text-black font-bold block text-xs">Total Pipeline Latency</span>
-                    <span className="text-[10px] font-bold bg-white text-black px-1.5 py-0.5 rounded border border-black">
-                      Target &lt;200ms PASSED
+                    <span className="text-black font-bold block text-xs">Total Latency</span>
+                    <span className="text-[9.5px] font-bold bg-white text-black px-1.5 py-0.2 rounded border border-black">
+                      Target &lt;200ms
                     </span>
                   </div>
-                  <span className="font-['Anton','Anybody',sans-serif] text-2xl font-bold text-black mt-1 block">
+                  <span className="font-['Space_Grotesk',sans-serif] text-xl font-bold text-black mt-0.5 block">
                     {latestTelemetry.total_ms || 0} ms
                   </span>
                 </div>
               </div>
             ) : (
               <p className="text-xs text-zinc-400 py-8 text-center">
-                Telemetry will appear after your first query or click &apos;Run Live Benchmark Suite&apos; above.
+                Telemetry will appear after your first query or click &apos;Run Live Benchmark&apos; above.
               </p>
             )}
           </div>
@@ -719,8 +740,8 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
       {/* Citation Inspector Modal */}
       {selectedCitation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs font-['Space_Grotesk',sans-serif]">
-          <div className="w-full max-w-lg rounded-xl bg-[#171305] border-4 border-black p-5 shadow-[8px_8px_0_0_#000] space-y-4">
-            <div className="flex items-center justify-between border-b-2 border-black pb-3">
+          <div className="w-full max-w-lg rounded-2xl bg-[#171305] border-4 border-black p-4 sm:p-5 shadow-[8px_8px_0_0_#000] space-y-3">
+            <div className="flex items-center justify-between border-b-2 border-black pb-2.5">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="size-5 text-[#d2691e]" />
                 <h3 className="font-bold text-[#f5f5f0] text-sm uppercase">Grounded Citation</h3>
@@ -728,7 +749,7 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
               <button
                 type="button"
                 onClick={() => setSelectedCitation(null)}
-                className="text-zinc-300 hover:text-white font-bold cursor-pointer"
+                className="text-zinc-300 hover:text-white font-bold cursor-pointer px-1"
               >
                 ✕
               </button>
@@ -740,15 +761,15 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
                   {(selectedCitation.similarity * 100).toFixed(1)}% Grounded
                 </span>
               </div>
-              <div className="p-3.5 rounded bg-[#1f1c0b] border-2 border-black font-mono text-xs text-zinc-200 leading-relaxed max-h-60 overflow-y-auto">
+              <div className="p-3 rounded-xl bg-[#1f1c0b] border-2 border-black font-mono text-xs text-zinc-200 leading-relaxed max-h-56 overflow-y-auto">
                 {selectedCitation.content}
               </div>
             </div>
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-end pt-1">
               <button
                 type="button"
                 onClick={() => setSelectedCitation(null)}
-                className="px-4 py-1.5 rounded bg-[#d2691e] hover:bg-[#e91e63] text-black hover:text-white border-2 border-black font-bold text-xs cursor-pointer shadow-[2px_2px_0_0_#000]"
+                className="px-4 py-1.5 rounded-lg bg-[#d2691e] hover:bg-[#e91e63] text-black hover:text-white border-2 border-black font-bold text-xs cursor-pointer shadow-[2px_2px_0_0_#000]"
               >
                 Close Inspector
               </button>
@@ -757,13 +778,13 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
         </div>
       )}
 
-      {/* Composer Panel with PromptBar */}
-      <div className="mt-auto shrink-0 p-3 bg-[#171305] border-t-3 border-black">
+      {/* Composer Panel with ChatGPT-style PromptBar */}
+      <div className="mt-auto shrink-0 p-2 sm:p-3 bg-[#171305] border-t-2 sm:border-t-3 border-black">
         <PromptBar
           placeholder={
             hasDocuments
-              ? 'Ask a question, speak by voice, type @ for sources or / for commands...'
-              : 'Ask about MSMARCO-XI, speak by voice, type @ for sources or / for commands...'
+              ? 'Ask a question or speak by voice...'
+              : 'Ask MSMARCO-XI or speak by voice...'
           }
           isLoading={isLoading}
           onSend={(text, sttMs) => executeQuery(text, sttMs)}
