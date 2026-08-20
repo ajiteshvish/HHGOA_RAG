@@ -1,5 +1,5 @@
 import { login, signup } from './actions'
-import { Brain } from 'lucide-react'
+import Link from 'next/link'
 
 export default async function LoginPage({
   searchParams,
@@ -10,43 +10,39 @@ export default async function LoginPage({
   const isSignUp = tab === 'signup'
 
   return (
-    <div className="flex-1 flex items-center justify-center w-full min-h-screen bg-zinc-950 px-4">
-      {/* Background gradient glow */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-teal-500/5 rounded-full blur-[100px]" />
-      </div>
-
+    <div className="flex-1 flex items-center justify-center w-full min-h-screen bg-[#171305] px-4 font-['Space_Grotesk',sans-serif]">
       <div className="relative w-full max-w-sm">
-        {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25 mb-4">
-            <Brain className="w-7 h-7 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-zinc-100 tracking-tight">Personal RAG AI</h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            {isSignUp ? 'Create your account' : 'Sign in to chat with your documents'}
+        {/* Logo & Header */}
+        <div className="flex flex-col items-center mb-6 text-center">
+          <Link href="/" className="w-12 h-12 rounded-xl bg-[#d2691e] border-3 border-black flex items-center justify-center shadow-[3px_3px_0_0_#000] text-xl font-bold text-black mb-2 hover:scale-105 transition-transform">
+            ⚡
+          </Link>
+          <h1 className="font-['Anton','Anybody',sans-serif] text-3xl text-[#d2691e] uppercase text-3d-goan tracking-tight">
+            HH GOA • VOICE RAG
+          </h1>
+          <p className="text-xs text-zinc-400 mt-1 font-['Be_Vietnam_Pro',sans-serif]">
+            {isSignUp ? 'Create your account' : 'Sign in to access your Voice RAG pipeline'}
           </p>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex mb-4 bg-zinc-900 rounded-xl p-1 border border-zinc-800">
+        <div className="flex mb-4 bg-[#1f1c0b] rounded-lg p-1 border-3 border-black shadow-[3px_3px_0_0_#000]">
           <a
             href="/login"
-            className={`flex-1 text-center py-2 text-sm font-medium rounded-lg transition-all ${
+            className={`flex-1 text-center py-2 text-xs font-bold uppercase rounded transition-all ${
               !isSignUp
-                ? 'bg-zinc-800 text-zinc-100 shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-300'
+                ? 'bg-[#d2691e] text-black shadow-[1px_1px_0_0_#000] border-2 border-black'
+                : 'text-zinc-400 hover:text-white'
             }`}
           >
             Sign In
           </a>
           <a
             href="/login?tab=signup"
-            className={`flex-1 text-center py-2 text-sm font-medium rounded-lg transition-all ${
+            className={`flex-1 text-center py-2 text-xs font-bold uppercase rounded transition-all ${
               isSignUp
-                ? 'bg-zinc-800 text-zinc-100 shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-300'
+                ? 'bg-[#d2691e] text-black shadow-[1px_1px_0_0_#000] border-2 border-black'
+                : 'text-zinc-400 hover:text-white'
             }`}
           >
             Sign Up
@@ -54,11 +50,11 @@ export default async function LoginPage({
         </div>
 
         {/* Form Card */}
-        <div className="bg-zinc-900/80 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div className="bg-[#1f1c0b] border-4 border-black rounded-xl p-6 shadow-[8px_8px_0_0_#000] space-y-4">
           {/* Google OAuth Button */}
           <a
             href="/api/auth/google"
-            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 text-sm font-medium text-zinc-200 hover:text-white transition-all shadow-sm group hover:border-zinc-600"
+            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded bg-white hover:bg-zinc-200 border-3 border-black text-xs font-bold text-black uppercase transition-all shadow-[3px_3px_0_0_#000] cursor-pointer"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path
@@ -83,23 +79,21 @@ export default async function LoginPage({
 
           {/* Divider */}
           <div className="relative flex items-center justify-center">
-            <div className="border-t border-zinc-800 w-full" />
-            <span className="bg-zinc-900 px-3 text-[11px] text-zinc-500 uppercase tracking-wider absolute">
+            <div className="border-t-2 border-black w-full" />
+            <span className="bg-[#1f1c0b] px-3 text-[10px] text-zinc-400 uppercase tracking-wider font-mono absolute">
               or with email
             </span>
           </div>
 
           {/* Email & Password Form */}
-          <form className="flex flex-col gap-4">
+          <form className="flex flex-col gap-3.5">
             <div>
-              <label className="text-xs font-medium text-zinc-400 mb-1.5 block" htmlFor="email">
+              <label className="text-[11px] font-bold uppercase text-zinc-300 mb-1 block" htmlFor="email">
                 Email Address
               </label>
               <input
                 id="email"
-                className="w-full rounded-xl px-4 py-2.5 bg-zinc-800 border border-zinc-700 text-sm text-zinc-200
-                           placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50
-                           transition-all"
+                className="w-full rounded px-3 py-2 bg-[#171305] border-2 border-black text-xs text-[#f5f5f0] font-bold focus:outline-none focus:border-[#d2691e] transition-all"
                 name="email"
                 type="email"
                 placeholder="you@example.com"
@@ -108,14 +102,12 @@ export default async function LoginPage({
             </div>
 
             <div>
-              <label className="text-xs font-medium text-zinc-400 mb-1.5 block" htmlFor="password">
+              <label className="text-[11px] font-bold uppercase text-zinc-300 mb-1 block" htmlFor="password">
                 Password
               </label>
               <input
                 id="password"
-                className="w-full rounded-xl px-4 py-2.5 bg-zinc-800 border border-zinc-700 text-sm text-zinc-200
-                           placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50
-                           transition-all"
+                className="w-full rounded px-3 py-2 bg-[#171305] border-2 border-black text-xs text-[#f5f5f0] font-bold focus:outline-none focus:border-[#d2691e] transition-all"
                 type="password"
                 name="password"
                 placeholder="••••••••"
@@ -123,44 +115,42 @@ export default async function LoginPage({
                 required
               />
               {isSignUp && (
-                <p className="text-[11px] text-zinc-600 mt-1.5">Minimum 6 characters</p>
+                <p className="text-[10px] text-zinc-500 mt-1">Minimum 6 characters</p>
               )}
             </div>
 
-            <div className="pt-2">
+            <div className="pt-1">
               {isSignUp ? (
                 <button
                   formAction={signup}
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl px-4 py-2.5 text-sm font-medium
-                             transition-colors shadow-lg shadow-emerald-600/20"
+                  className="w-full bg-[#d2691e] hover:bg-[#e91e63] text-black hover:text-white rounded py-2.5 text-xs font-bold uppercase border-3 border-black shadow-[3px_3px_0_0_#000] btn-neubrutalist cursor-pointer transition-colors"
                 >
-                  Create Account
+                  Create Account 🚀
                 </button>
               ) : (
                 <button
                   formAction={login}
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl px-4 py-2.5 text-sm font-medium
-                             transition-colors shadow-lg shadow-emerald-600/20"
+                  className="w-full bg-[#d2691e] hover:bg-[#e91e63] text-black hover:text-white rounded py-2.5 text-xs font-bold uppercase border-3 border-black shadow-[3px_3px_0_0_#000] btn-neubrutalist cursor-pointer transition-colors"
                 >
-                  Sign In
+                  Sign In 🚀
                 </button>
               )}
             </div>
           </form>
 
           {message && (
-            <div className={`mt-4 p-3 text-sm text-center rounded-xl border ${
+            <div className={`mt-3 p-2.5 text-xs text-center rounded border-2 border-black font-bold ${
               message.toLowerCase().includes('success')
-                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                : 'bg-red-500/10 border-red-500/20 text-red-400'
+                ? 'bg-[#d2691e] text-black'
+                : 'bg-[#e91e63] text-white'
             }`}>
               {message}
             </div>
           )}
         </div>
 
-        <p className="text-center text-[11px] text-zinc-600 mt-6">
-          Upload PDFs, DOCX, and TXT files • Chat with AI about your data
+        <p className="text-center text-[10px] text-zinc-500 mt-4 font-mono">
+          Hacker House Goa 2026 • Task 2 Voice RAG
         </p>
       </div>
     </div>

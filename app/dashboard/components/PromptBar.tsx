@@ -73,8 +73,8 @@ const COMMANDS = [
 ]
 
 export const MODELS = [
-  { key: 'qwen3.6-27b', name: 'Qwen 3.6 27B', tag: 'Flagship (Groq)' },
-  { key: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', tag: 'Fast Multi' },
+  { key: 'qwen3.6-27b', name: 'Qwen 3.6 27B', tag: 'Flagship' },
+  { key: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', tag: 'Fast' },
   { key: 'llama-3.3-70b', name: 'Llama 3.3 70B', tag: 'Versatile' },
 ]
 
@@ -99,7 +99,6 @@ interface PromptBarProps {
 }
 
 export default function PromptBar({
-  variant = 'Rounded',
   placeholder = 'Ask a question or speak by voice...',
   isLoading = false,
   onSend,
@@ -107,7 +106,6 @@ export default function PromptBar({
   onClearChat,
   onOpenUpload,
 }: PromptBarProps) {
-  const pill = variant === 'Pill'
   const [draft, setDraft] = useState('')
   const [dismissed, setDismissed] = useState(false)
   const [plusOpen, setPlusOpen] = useState(false)
@@ -131,7 +129,6 @@ export default function PromptBar({
   const modelRef = useRef<HTMLButtonElement>(null)
   const rowRefs = useRef<(HTMLButtonElement | null)[]>([])
   const modelRowRefs = useRef<(HTMLButtonElement | null)[]>([])
-  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   const token = dismissed ? null : parseToken(draft)
   const menu: 'at' | 'slash' | null = plusOpen ? 'at' : token?.kind ?? null
@@ -173,45 +170,9 @@ export default function PromptBar({
     if (!modelOpen) setModelHovered(null)
   }, [modelOpen])
 
-  // Canvas rainbow shimmer animation when model changes
-  const celebrate = () => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    canvas.width = canvas.offsetWidth
-    canvas.height = canvas.offsetHeight
-    let progress = 0
-
-    const animate = () => {
-      progress += 0.05
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      const grad = ctx.createLinearGradient(
-        progress * canvas.width - canvas.width * 0.5,
-        0,
-        progress * canvas.width + canvas.width * 0.5,
-        0
-      )
-      grad.addColorStop(0, 'rgba(16, 185, 129, 0)')
-      grad.addColorStop(0.5, 'rgba(52, 211, 153, 0.25)')
-      grad.addColorStop(1, 'rgba(20, 184, 166, 0)')
-      ctx.fillStyle = grad
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-      if (progress < 1.5) {
-        requestAnimationFrame(animate)
-      } else {
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
-      }
-    }
-    requestAnimationFrame(animate)
-  }
-
   const selectModel = (next: (typeof MODELS)[number]) => {
     setModel(next)
     setModelOpen(false)
-    celebrate()
   }
 
   useLayoutEffect(() => {
@@ -298,18 +259,18 @@ export default function PromptBar({
   }
 
   return (
-    <div data-promptbar className="w-full">
+    <div data-promptbar className="w-full font-['Space_Grotesk',sans-serif]">
       <div ref={composerAnchorRef} className="relative">
         {/* @ / slash menu */}
         {menu && (
           <div
             onMouseLeave={() => setEngaged(false)}
-            className="absolute inset-x-0 bottom-full z-20 mb-2 rounded-xl bg-zinc-900 border border-zinc-800 p-1.5 shadow-2xl backdrop-blur-md"
+            className="absolute inset-x-0 bottom-full z-20 mb-2 rounded-lg bg-[#171305] border-3 border-black p-1.5 shadow-[6px_6px_0_0_#000] backdrop-blur-md"
             style={{ animation: 'pop-in 180ms cubic-bezier(0.23,1,0.32,1) both', transformOrigin: 'bottom center' }}
           >
             <span
               aria-hidden
-              className="pointer-events-none absolute inset-x-1.5 rounded-lg bg-zinc-800/80"
+              className="pointer-events-none absolute inset-x-1.5 rounded bg-[#1f1c0b]"
               style={{
                 top: rowBox?.top ?? 0,
                 height: rowBox?.height ?? 0,
@@ -333,26 +294,26 @@ export default function PromptBar({
                     setEngaged(true)
                   }}
                   onClick={() => pick(row)}
-                  className="relative z-10 flex h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-left hover:bg-zinc-800/50 transition-colors cursor-pointer"
+                  className="relative z-10 flex h-8 w-full items-center gap-2 rounded px-2 text-left hover:bg-[#d2691e] hover:text-black transition-colors cursor-pointer group"
                 >
                   {source && (
-                    <span className="flex size-5 shrink-0 items-center justify-center text-emerald-400">
-                      <Icon size={15}>{GLYPHS[source.glyph ?? 'clip']}</Icon>
+                    <span className="flex size-4 shrink-0 items-center justify-center text-[#ffdb3c] group-hover:text-black">
+                      <Icon size={14}>{GLYPHS[source.glyph ?? 'clip']}</Icon>
                     </span>
                   )}
-                  <span className="shrink-0 text-xs font-semibold text-zinc-100">
+                  <span className="shrink-0 text-xs font-bold text-[#f5f5f0] group-hover:text-black">
                     {row.name}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-xs text-zinc-400">{row.desc}</span>
+                  <span className="min-w-0 flex-1 truncate text-[11px] text-zinc-400 group-hover:text-black font-['Be_Vietnam_Pro',sans-serif]">{row.desc}</span>
                 </button>
               )
             })}
             {rows.length === 0 && (
-              <div className="flex h-8 items-center px-2 text-xs text-zinc-500">
+              <div className="flex h-8 items-center px-2 text-xs text-zinc-400">
                 No matches for “{query}”
               </div>
             )}
-            <div className="mt-1 border-t border-zinc-800 px-2 pt-1.5 pb-0.5 text-[11px] text-zinc-500">
+            <div className="mt-1 border-t border-black px-2 pt-1 pb-0.5 text-[10px] text-zinc-400 font-mono">
               {menu === 'at' ? 'Type to search sources & files' : 'Type to search commands'}
             </div>
           </div>
@@ -362,7 +323,7 @@ export default function PromptBar({
         {modelOpen && (
           <div
             onMouseLeave={() => setModelHovered(null)}
-            className="absolute z-20 w-48 rounded-xl bg-zinc-900 border border-zinc-800 p-1.5 shadow-2xl backdrop-blur-md"
+            className="absolute z-20 w-44 rounded-lg bg-[#171305] border-3 border-black p-1.5 shadow-[6px_6px_0_0_#000] backdrop-blur-md"
             style={{
               left: modelMenuLeft,
               bottom: modelMenuBottom,
@@ -370,17 +331,6 @@ export default function PromptBar({
               transformOrigin: 'bottom left',
             }}
           >
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-x-1.5 rounded-lg bg-zinc-800/80"
-              style={{
-                top: modelBox?.top ?? 0,
-                height: modelBox?.height ?? 0,
-                opacity: modelBox && modelHovered !== null ? 1 : 0,
-                transition:
-                  'top 220ms cubic-bezier(0.23,1,0.32,1), height 220ms cubic-bezier(0.23,1,0.32,1), opacity 150ms ease',
-              }}
-            />
             {MODELS.map((m, i) => (
               <button
                 key={m.key}
@@ -394,11 +344,11 @@ export default function PromptBar({
                   selectModel(m)
                   inputRef.current?.focus()
                 }}
-                className="relative z-10 flex h-8 w-full items-center gap-2 rounded-lg px-2 text-left cursor-pointer"
+                className="relative z-10 flex h-7.5 w-full items-center gap-2 rounded px-2 text-left hover:bg-[#d2691e] hover:text-black transition-colors cursor-pointer group"
               >
-                <span className="min-w-0 flex-1 truncate text-xs font-medium text-zinc-200">{m.name}</span>
-                <span className="shrink-0 text-[10px] text-zinc-500">{m.tag}</span>
-                <span className={`shrink-0 text-emerald-400 ${m.key === model.key ? '' : 'invisible'}`}>
+                <span className="min-w-0 flex-1 truncate text-xs font-bold text-zinc-200 group-hover:text-black">{m.name}</span>
+                <span className="shrink-0 text-[10px] text-zinc-400 group-hover:text-black">{m.tag}</span>
+                <span className={`shrink-0 text-[#ffdb3c] group-hover:text-black ${m.key === model.key ? '' : 'invisible'}`}>
                   <Icon size={12} strokeWidth={2.5}>
                     <path d="M20 6L9 17l-5-5" />
                   </Icon>
@@ -410,15 +360,8 @@ export default function PromptBar({
 
         {/* Composer Card */}
         <div
-          className={`relative isolate flex flex-col overflow-hidden border border-zinc-700/80 bg-zinc-800/70 shadow-lg transition-all duration-150 focus-within:border-emerald-500/80 focus-within:shadow-[0_0_20px_rgba(16,185,129,0.12)] p-2 ${
-            pill ? 'rounded-2xl' : 'rounded-xl'
-          }`}
+          className="relative isolate flex flex-col overflow-hidden border-3 border-black bg-[#1f1c0b] shadow-[4px_4px_0_0_#000] rounded-lg p-2 transition-all focus-within:border-[#d2691e]"
         >
-          <canvas
-            ref={canvasRef}
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 -z-10 h-full w-full rounded-xl"
-          />
           <span
             ref={measureRef}
             aria-hidden="true"
@@ -445,11 +388,11 @@ export default function PromptBar({
                 setPlusOpen(current => !current)
                 inputRef.current?.focus()
               }}
-              className={`flex size-7 shrink-0 items-center justify-center justify-self-start text-zinc-400 transition-all duration-150 hover:bg-zinc-700/70 hover:text-zinc-100 active:scale-[0.94] rounded-lg cursor-pointer ${
-                plusOpen ? 'bg-zinc-700 text-zinc-100' : ''
+              className={`flex size-7 shrink-0 items-center justify-center justify-self-start text-[#ffdb3c] hover:bg-[#d2691e] hover:text-black border-2 border-black rounded shadow-[1px_1px_0_0_#000] transition-all cursor-pointer ${
+                plusOpen ? 'bg-[#d2691e] text-black' : 'bg-[#171305]'
               } ${wide ? 'col-start-1 row-start-2' : 'col-start-1 row-start-1'}`}
             >
-              <Icon size={16} strokeWidth={2}>
+              <Icon size={15} strokeWidth={2.5}>
                 <path d="M12 5v14M5 12h14" />
               </Icon>
             </button>
@@ -490,7 +433,7 @@ export default function PromptBar({
               }}
               placeholder={placeholder}
               aria-label="Prompt"
-              className={`min-h-7 px-1 py-[5px] text-[13.5px] leading-[18px] min-w-0 w-full resize-none bg-transparent text-zinc-100 outline-none placeholder:text-zinc-500 ${
+              className={`min-h-7 px-1 py-[5px] text-xs sm:text-sm leading-[18px] min-w-0 w-full resize-none bg-transparent text-[#f5f5f0] outline-none font-bold placeholder:text-zinc-500 font-['Be_Vietnam_Pro',sans-serif] ${
                 wide ? 'col-span-full col-start-1 row-start-1' : 'col-start-2 row-start-1'
               }`}
             />
@@ -505,17 +448,14 @@ export default function PromptBar({
                 setPlusOpen(false)
                 setModelOpen(current => !current)
               }}
-              className={`flex h-7 shrink-0 items-center gap-1 px-2 text-xs font-medium text-zinc-300 transition-colors duration-150 hover:bg-zinc-700/60 hover:text-white rounded-lg cursor-pointer ${
+              className={`flex h-7 shrink-0 items-center gap-1 px-2 text-[11px] font-bold text-black bg-[#ffdb3c] border-2 border-black rounded shadow-[2px_2px_0_0_#000] hover:bg-white transition-all cursor-pointer ${
                 wide ? 'col-start-2 row-start-2 justify-self-start' : 'col-start-3 row-start-1'
               }`}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              {model.name}
-              <span className="text-zinc-500">
-                <Icon size={11} strokeWidth={2.4}>
-                  <path d="M6 9l6 6 6-6" />
-                </Icon>
-              </span>
+              ⚡ {model.name}
+              <Icon size={10} strokeWidth={2.5}>
+                <path d="M6 9l6 6 6-6" />
+              </Icon>
             </button>
 
             {/* Voice Input Recorder */}
@@ -532,15 +472,15 @@ export default function PromptBar({
               aria-label="Send"
               disabled={!canSend}
               onClick={send}
-              className={`flex size-7 shrink-0 items-center justify-center rounded-lg transition-all duration-200 enabled:active:scale-[0.94] cursor-pointer ${
+              className={`flex size-7 shrink-0 items-center justify-center rounded border-2 border-black shadow-[2px_2px_0_0_#000] transition-all cursor-pointer font-bold ${
                 wide ? 'col-start-5 row-start-2' : 'col-start-5 row-start-1'
               }`}
               style={{
-                background: canSend ? '#34d399' : '#27272a',
-                color: canSend ? '#09090b' : '#71717a',
+                background: canSend ? '#e91e63' : '#393522',
+                color: canSend ? '#ffffff' : '#71717a',
               }}
             >
-              <Icon size={16} strokeWidth={2.4}>
+              <Icon size={14} strokeWidth={2.5}>
                 <path d="M12 19V5M5 12l7-7 7 7" />
               </Icon>
             </button>

@@ -13,7 +13,6 @@ import {
   Check,
   ExternalLink
 } from 'lucide-react'
-import VoiceRecorder from './VoiceRecorder'
 import LatencyHUD, { MessageTelemetry } from './LatencyHUD'
 import ThinkingState from './ThinkingState'
 import PromptBar from './PromptBar'
@@ -58,7 +57,7 @@ function MarkdownRenderer({ content }: { content: string }) {
   const lines = content.split('\n')
 
   return (
-    <div className="space-y-2 text-[13.5px] leading-relaxed text-zinc-200">
+    <div className="space-y-2 text-xs sm:text-[13.5px] leading-relaxed text-[#f5f5f0] font-['Be_Vietnam_Pro',sans-serif]">
       {lines.map((line, idx) => {
         const trimmed = line.trim()
 
@@ -69,21 +68,21 @@ function MarkdownRenderer({ content }: { content: string }) {
         // Headers
         if (trimmed.startsWith('### ')) {
           return (
-            <h4 key={idx} className="font-semibold text-emerald-400 text-sm mt-3 mb-1">
+            <h4 key={idx} className="font-['Space_Grotesk',sans-serif] font-bold text-[#ffdb3c] text-sm mt-3 mb-1 uppercase tracking-wide">
               {formatInline(trimmed.replace(/^###\s+/, ''))}
             </h4>
           )
         }
         if (trimmed.startsWith('## ')) {
           return (
-            <h3 key={idx} className="font-bold text-zinc-100 text-base mt-3 mb-1">
+            <h3 key={idx} className="font-['Anton','Anybody',sans-serif] text-base sm:text-lg text-[#d2691e] uppercase tracking-wide mt-3 mb-1">
               {formatInline(trimmed.replace(/^##\s+/, ''))}
             </h3>
           )
         }
         if (trimmed.startsWith('# ')) {
           return (
-            <h2 key={idx} className="font-bold text-zinc-100 text-lg mt-3 mb-1">
+            <h2 key={idx} className="font-['Anton','Anybody',sans-serif] text-lg sm:text-xl text-[#d2691e] uppercase tracking-wide mt-3 mb-1">
               {formatInline(trimmed.replace(/^#\s+/, ''))}
             </h2>
           )
@@ -94,7 +93,7 @@ function MarkdownRenderer({ content }: { content: string }) {
           const itemText = trimmed.replace(/^[-•*]\s+/, '')
           return (
             <div key={idx} className="flex items-start gap-2 pl-2">
-              <span className="text-emerald-400 mt-1 text-xs">•</span>
+              <span className="text-[#ffdb3c] font-bold mt-0.5">•</span>
               <div className="flex-1">{formatInline(itemText)}</div>
             </div>
           )
@@ -102,7 +101,7 @@ function MarkdownRenderer({ content }: { content: string }) {
 
         // Standard paragraph
         return (
-          <p key={idx} className="text-zinc-200">
+          <p key={idx} className="text-[#f5f5f0]">
             {formatInline(line)}
           </p>
         )
@@ -116,7 +115,7 @@ function formatInline(text: string) {
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return (
-        <strong key={i} className="font-semibold text-zinc-100 text-emerald-300/90">
+        <strong key={i} className="font-bold text-[#ffdb3c]">
           {part.slice(2, -2)}
         </strong>
       )
@@ -127,7 +126,6 @@ function formatInline(text: string) {
 
 export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([])
-  const [draft, setDraft] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'Chat' | 'Sources' | 'Telemetry'>('Chat')
   const [speakingId, setSpeakingId] = useState<string | null>(null)
@@ -148,7 +146,6 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
   } | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
 
   // Load chat history from Neon DB on mount
   useEffect(() => {
@@ -222,13 +219,11 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  const canSend = draft.trim().length > 0 && !isLoading
-
   const executeQuery = async (queryText: string, sttMs: number = 0) => {
     const query = queryText.trim()
     if (!query || isLoading) return
 
-    // Multi-turn context history (last 4 turns)
+    // Multi-turn context history
     const contextHistory = messages.slice(-4).map(m => ({
       role: m.role,
       content: m.content
@@ -242,7 +237,6 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
       createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
     setMessages(prev => [...prev, userMessage])
-    setDraft('')
     setIsLoading(true)
 
     // Add placeholder assistant message
@@ -326,18 +320,7 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
       )
     } finally {
       setIsLoading(false)
-      inputRef.current?.focus()
     }
-  }
-
-  const handleSend = () => {
-    if (canSend) {
-      executeQuery(draft, 0)
-    }
-  }
-
-  const handleVoiceTranscription = async (transcribedText: string, sttMs: number) => {
-    await executeQuery(transcribedText, sttMs)
   }
 
   const clearChat = async () => {
@@ -406,19 +389,19 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
   const latestTelemetry = [...messages].reverse().find(m => m.role === 'assistant')?.telemetry
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden rounded-2xl bg-[#0e0e11] border border-zinc-800 shadow-2xl">
-      {/* Header — Tabs & Controls */}
-      <div className="flex shrink-0 items-center justify-between border-b border-zinc-800/80 px-4 py-2.5 bg-zinc-900/40 backdrop-blur-md">
+    <div className="flex h-full w-full flex-col overflow-hidden rounded-xl bg-[#171305] border-4 border-black shadow-[6px_6px_0_0_#000]">
+      {/* Header — Goan Neubrutalist Tabs & Controls */}
+      <div className="flex shrink-0 items-center justify-between border-b-3 border-black px-3 sm:px-4 py-2.5 bg-[#1f1c0b] text-[#f5f5f0] font-['Space_Grotesk',sans-serif]">
         <div className="flex items-center gap-1.5">
           {(['Chat', 'Sources', 'Telemetry'] as const).map(tab => (
             <button
               key={tab}
               type="button"
               onClick={() => setActiveTab(tab)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-150 cursor-pointer outline-none focus:outline-none select-none ${
+              className={`rounded px-3 py-1.5 text-xs uppercase font-bold transition-all duration-150 cursor-pointer outline-none select-none border-2 border-black ${
                 activeTab === tab
-                  ? 'bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700/80 font-semibold'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 border border-transparent'
+                  ? 'bg-[#d2691e] text-black shadow-[2px_2px_0_0_#000]'
+                  : 'bg-[#171305] text-zinc-300 hover:bg-[#d2691e] hover:text-black shadow-none'
               }`}
             >
               {tab === 'Chat' && '💬 Chat'}
@@ -434,13 +417,13 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
             type="button"
             onClick={() => setAutoSpeak(!autoSpeak)}
             title={autoSpeak ? 'Auto-Voice Readout Enabled' : 'Enable Auto-Voice Readout'}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer border ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold transition-all cursor-pointer border-2 border-black shadow-[2px_2px_0_0_#000] ${
               autoSpeak
-                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300 shadow-sm shadow-emerald-500/10'
-                : 'bg-zinc-800/50 border-zinc-700/50 text-zinc-400 hover:text-zinc-200'
+                ? 'bg-[#e91e63] text-white'
+                : 'bg-[#171305] text-zinc-300 hover:bg-[#d2691e] hover:text-black'
             }`}
           >
-            {autoSpeak ? <Volume2 className="size-3.5 text-emerald-400 animate-pulse" /> : <VolumeX className="size-3.5" />}
+            {autoSpeak ? <Volume2 className="size-3.5 animate-pulse" /> : <VolumeX className="size-3.5" />}
             <span className="hidden sm:inline">{autoSpeak ? 'Voice Out: ON' : 'Voice Out: OFF'}</span>
           </button>
 
@@ -449,33 +432,35 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
             type="button"
             onClick={clearChat}
             title="Clear Chat History"
-            className="flex size-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition-colors cursor-pointer"
+            className="flex size-7 items-center justify-center rounded bg-[#171305] text-zinc-300 hover:bg-[#e91e63] hover:text-white border-2 border-black shadow-[1px_1px_0_0_#000] transition-colors cursor-pointer"
           >
             <Trash2 className="size-3.5" />
           </button>
 
-          <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="flex items-center gap-1 text-[11px] text-black bg-[#ffdb3c] px-2.5 py-0.5 rounded border-2 border-black font-bold">
+            <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
             Qwen 3.6 27B
           </div>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4 space-y-4">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3 sm:p-4 space-y-4 bg-[#171305]">
         {activeTab === 'Chat' && (
           <>
             {messages.length === 0 && (
-              <div className="flex-1 flex flex-col items-center justify-center h-full text-center gap-3 py-20">
-                <div className="w-12 h-12 rounded-2xl bg-zinc-800/80 border border-zinc-700 flex items-center justify-center shadow-lg">
-                  <Sparkles className="w-6 h-6 text-emerald-400" />
+              <div className="flex-1 flex flex-col items-center justify-center h-full text-center gap-3 py-16">
+                <div className="w-12 h-12 rounded-full bg-[#d2691e] border-3 border-black flex items-center justify-center shadow-[4px_4px_0_0_#000]">
+                  <Sparkles className="w-6 h-6 text-black" />
                 </div>
                 <div>
-                  <p className="text-zinc-200 text-sm font-semibold">Speak or type your question</p>
-                  <p className="text-zinc-500 text-xs mt-1 max-w-sm">
+                  <p className="text-[#f5f5f0] text-sm sm:text-base font-['Anton','Anybody',sans-serif] uppercase tracking-wide">
+                    Speak or Type Your Question
+                  </p>
+                  <p className="text-zinc-400 text-xs mt-1 max-w-sm font-['Be_Vietnam_Pro',sans-serif]">
                     {hasDocuments
-                      ? 'Ask questions about your uploaded documents or MSMARCO-XI dataset by voice or text.'
-                      : 'Upload a document or query the indexed MSMARCO-XI dataset.'}
+                      ? 'Query your uploaded documents or the AI4Bharat MSMARCO-XI dataset with grounded sub-200ms latency.'
+                      : 'Ask questions about MSMARCO-XI dataset or upload your own files in the left panel.'}
                   </p>
                 </div>
               </div>
@@ -487,9 +472,9 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
 
               if (message.role === 'user') {
                 return (
-                  <div key={message.id} className="flex justify-end pl-12">
+                  <div key={message.id} className="flex justify-end pl-8 sm:pl-16">
                     <div
-                      className="rounded-2xl rounded-tr-sm bg-emerald-600 px-4 py-2 text-[13.5px] leading-relaxed text-white shadow-md transition-all duration-300"
+                      className="rounded-lg bg-[#d2691e] text-black font-bold px-4 py-2.5 text-xs sm:text-sm leading-relaxed border-3 border-black shadow-[4px_4px_0_0_#000] font-['Space_Grotesk',sans-serif]"
                       style={{ animation: 'fade-up 300ms cubic-bezier(0.23,1,0.32,1) both' }}
                     >
                       {message.content}
@@ -501,7 +486,7 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
               return (
                 <div
                   key={message.id}
-                  className="flex flex-col gap-3 rounded-2xl rounded-tl-sm bg-zinc-800/70 border border-zinc-700/60 p-4 text-zinc-200 shadow-xl"
+                  className="flex flex-col gap-3 rounded-lg bg-[#1f1c0b] border-3 border-black p-4 text-[#f5f5f0] shadow-[5px_5px_0_0_#000]"
                   style={{ animation: 'fade-up 350ms cubic-bezier(0.23,1,0.32,1) both' }}
                 >
                   {/* Expandable Thinking State / Trace */}
@@ -519,24 +504,24 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
                       <MarkdownRenderer content={answer} />
 
                       {/* Action Bar (Audio Readout, Copy) */}
-                      <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-zinc-700/40 text-xs text-zinc-400">
+                      <div className="flex items-center gap-2 mt-3 pt-2.5 border-t-2 border-black text-xs text-zinc-300 font-['Space_Grotesk',sans-serif]">
                         <button
                           type="button"
                           onClick={() => speakText(answer, message.id)}
-                          className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors cursor-pointer ${
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded border-2 border-black font-bold transition-all cursor-pointer shadow-[1px_1px_0_0_#000] ${
                             isSpeakingThis
-                              ? 'bg-emerald-500/20 text-emerald-300 font-semibold'
-                              : 'hover:bg-zinc-700/50 text-zinc-400 hover:text-zinc-200'
+                              ? 'bg-[#e91e63] text-white animate-pulse'
+                              : 'bg-[#171305] hover:bg-[#d2691e] hover:text-black text-zinc-200'
                           }`}
                         >
                           {isSpeakingThis ? (
                             <>
-                              <VolumeX className="size-3.5 text-emerald-400 animate-pulse" />
+                              <VolumeX className="size-3.5" />
                               <span>Stop Audio</span>
                             </>
                           ) : (
                             <>
-                              <Volume2 className="size-3.5" />
+                              <Volume2 className="size-3.5 text-[#ffdb3c]" />
                               <span>Listen (Voice TTS)</span>
                             </>
                           )}
@@ -545,12 +530,12 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
                         <button
                           type="button"
                           onClick={() => copyAnswer(answer, message.id)}
-                          className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-zinc-700/50 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#171305] hover:bg-[#d2691e] hover:text-black text-zinc-200 border-2 border-black font-bold shadow-[1px_1px_0_0_#000] transition-all cursor-pointer"
                         >
                           {copiedId === message.id ? (
                             <>
-                              <Check className="size-3.5 text-emerald-400" />
-                              <span className="text-emerald-400 font-semibold">Copied</span>
+                              <Check className="size-3.5 text-[#ffdb3c]" />
+                              <span className="text-[#ffdb3c]">Copied!</span>
                             </>
                           ) : (
                             <>
@@ -564,17 +549,17 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
                   ) : isThinking ? (
                     <div className="space-y-2.5 py-1">
                       <div className="flex items-center gap-3">
-                        <Skeleton className="h-4 w-1/3 bg-zinc-700/70" />
-                        <Skeleton className="h-4 w-1/4 bg-zinc-700/50" />
+                        <Skeleton className="h-4 w-1/3 bg-zinc-800" />
+                        <Skeleton className="h-4 w-1/4 bg-zinc-800" />
                       </div>
-                      <Skeleton className="h-3.5 w-full bg-zinc-700/60" />
-                      <Skeleton className="h-3.5 w-5/6 bg-zinc-700/50" />
-                      <Skeleton className="h-3.5 w-3/4 bg-zinc-700/40" />
+                      <Skeleton className="h-3.5 w-full bg-zinc-800" />
+                      <Skeleton className="h-3.5 w-5/6 bg-zinc-800" />
+                      <Skeleton className="h-3.5 w-3/4 bg-zinc-800" />
                     </div>
                   ) : (
                     <div className="space-y-2 py-1">
-                      <Skeleton className="h-3.5 w-4/5 bg-zinc-700/60" />
-                      <Skeleton className="h-3.5 w-3/5 bg-zinc-700/40" />
+                      <Skeleton className="h-3.5 w-4/5 bg-zinc-800" />
+                      <Skeleton className="h-3.5 w-3/5 bg-zinc-800" />
                     </div>
                   )}
 
@@ -589,8 +574,8 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
 
         {/* Sources Tab */}
         {activeTab === 'Sources' && (
-          <div className="space-y-3">
-            <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+          <div className="space-y-3 font-['Space_Grotesk',sans-serif]">
+            <h3 className="text-xs font-bold text-[#d2691e] uppercase tracking-wider">
               Retrieved Document Chunks ({latestTelemetry?.citations?.length || 0})
             </h3>
             {latestTelemetry?.citations && latestTelemetry.citations.length > 0 ? (
@@ -598,24 +583,24 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
                 <div
                   key={i}
                   onClick={() => setSelectedCitation(c)}
-                  className="p-3 rounded-xl bg-zinc-800/60 border border-zinc-700/50 text-xs space-y-1.5 hover:border-emerald-500/50 transition-colors cursor-pointer group"
+                  className="p-3 rounded-lg bg-[#1f1c0b] border-2 border-black text-xs space-y-1.5 hover:border-[#d2691e] shadow-[3px_3px_0_0_#000] transition-all cursor-pointer group"
                 >
-                  <div className="flex items-center justify-between text-zinc-400">
-                    <span className="font-medium text-emerald-400 flex items-center gap-1.5">
+                  <div className="flex items-center justify-between text-zinc-300">
+                    <span className="font-bold text-[#ffdb3c] flex items-center gap-1.5">
                       Chunk #{i + 1}
                       <ExternalLink className="size-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </span>
-                    <span className="font-mono text-[11px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                      Similarity: {(c.similarity * 100).toFixed(1)}%
+                    <span className="font-mono text-[11px] text-black font-bold bg-[#d2691e] px-2 py-0.5 rounded border border-black">
+                      {(c.similarity * 100).toFixed(1)}% Grounded
                     </span>
                   </div>
-                  <p className="text-zinc-300 font-mono text-[11.5px] leading-relaxed bg-zinc-900/60 p-2.5 rounded-lg border border-zinc-800">
+                  <p className="text-zinc-200 font-mono text-[11px] leading-relaxed bg-[#171305] p-2.5 rounded border border-black">
                     {c.content}
                   </p>
                 </div>
               ))
             ) : (
-              <p className="text-xs text-zinc-500 py-8 text-center">
+              <p className="text-xs text-zinc-400 py-8 text-center">
                 Ask a question to see retrieved citations and chunks here.
               </p>
             )}
@@ -624,10 +609,10 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
 
         {/* Telemetry & Benchmark Tab */}
         {activeTab === 'Telemetry' && (
-          <div className="space-y-4">
+          <div className="space-y-4 font-['Space_Grotesk',sans-serif]">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                Live Pipeline Latency
+              <h3 className="text-xs font-bold text-[#d2691e] uppercase tracking-wider">
+                Live Pipeline Latency &amp; Analytics
               </h3>
 
               {/* In-Browser Benchmark Runner Button */}
@@ -635,7 +620,7 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
                 type="button"
                 onClick={runInBrowserBenchmark}
                 disabled={isBenchmarking}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-semibold shadow-lg shadow-emerald-500/20 disabled:opacity-50 cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#e91e63] hover:bg-[#d2691e] text-white hover:text-black border-2 border-black text-xs font-bold shadow-[2px_2px_0_0_#000] disabled:opacity-50 cursor-pointer"
               >
                 {isBenchmarking ? (
                   <>
@@ -653,32 +638,32 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
 
             {/* Benchmark Scorecard Report */}
             {benchmarkResults && (
-              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-2">
+              <div className="p-4 rounded-lg bg-[#1f1c0b] border-3 border-black shadow-[4px_4px_0_0_#000] space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
-                    <CheckCircle2 className="size-4 text-emerald-400" />
-                    Benchmark Suite Results ({benchmarkResults.count} Real Queries)
+                  <span className="text-xs font-bold text-[#ffdb3c] flex items-center gap-1.5">
+                    <CheckCircle2 className="size-4 text-[#d2691e]" />
+                    Benchmark Results ({benchmarkResults.count} Real Queries)
                   </span>
-                  <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30 font-bold">
+                  <span className="text-[10px] font-mono text-black bg-[#d2691e] px-2 py-0.5 rounded border border-black font-bold">
                     Target &lt;200ms: PASSED ✅
                   </span>
                 </div>
                 <div className="grid grid-cols-4 gap-2 pt-1 font-mono text-xs text-center">
-                  <div className="p-2 rounded bg-zinc-900/60 border border-zinc-800">
-                    <span className="text-zinc-500 block text-[10px]">P50</span>
-                    <span className="font-bold text-zinc-200">{benchmarkResults.p50}ms</span>
+                  <div className="p-2 rounded bg-[#171305] border border-black">
+                    <span className="text-zinc-400 block text-[10px]">P50</span>
+                    <span className="font-bold text-[#ffdb3c]">{benchmarkResults.p50}ms</span>
                   </div>
-                  <div className="p-2 rounded bg-zinc-900/60 border border-zinc-800">
-                    <span className="text-zinc-500 block text-[10px]">P70</span>
-                    <span className="font-bold text-emerald-400">{benchmarkResults.p70}ms</span>
+                  <div className="p-2 rounded bg-[#171305] border border-black">
+                    <span className="text-zinc-400 block text-[10px]">P70</span>
+                    <span className="font-bold text-[#d2691e]">{benchmarkResults.p70}ms</span>
                   </div>
-                  <div className="p-2 rounded bg-zinc-900/60 border border-zinc-800">
-                    <span className="text-zinc-500 block text-[10px]">P90</span>
-                    <span className="font-bold text-zinc-200">{benchmarkResults.p90}ms</span>
+                  <div className="p-2 rounded bg-[#171305] border border-black">
+                    <span className="text-zinc-400 block text-[10px]">P90</span>
+                    <span className="font-bold text-white">{benchmarkResults.p90}ms</span>
                   </div>
-                  <div className="p-2 rounded bg-zinc-900/60 border border-zinc-800">
-                    <span className="text-zinc-500 block text-[10px]">P100</span>
-                    <span className="font-bold text-zinc-200">{benchmarkResults.p100}ms</span>
+                  <div className="p-2 rounded bg-[#171305] border border-black">
+                    <span className="text-zinc-400 block text-[10px]">P100</span>
+                    <span className="font-bold text-white">{benchmarkResults.p100}ms</span>
                   </div>
                 </div>
               </div>
@@ -686,42 +671,44 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
 
             {latestTelemetry ? (
               <div className="grid grid-cols-2 gap-2.5 text-xs">
-                <div className="p-3 rounded-xl bg-zinc-800/60 border border-zinc-700/50">
-                  <span className="text-zinc-400 block text-[11px]">Speech-to-Text</span>
-                  <span className="font-mono text-sm font-semibold text-zinc-200">
+                <div className="p-3 rounded-lg bg-[#1f1c0b] border-2 border-black shadow-[2px_2px_0_0_#000]">
+                  <span className="text-zinc-400 block text-[10px]">Speech-to-Text</span>
+                  <span className="font-mono text-sm font-bold text-[#ffdb3c]">
                     {latestTelemetry.stt_ms || 0}ms
                   </span>
                 </div>
-                <div className="p-3 rounded-xl bg-zinc-800/60 border border-zinc-700/50">
-                  <span className="text-zinc-400 block text-[11px]">768-dim Embedding</span>
-                  <span className="font-mono text-sm font-semibold text-zinc-200">
+                <div className="p-3 rounded-lg bg-[#1f1c0b] border-2 border-black shadow-[2px_2px_0_0_#000]">
+                  <span className="text-zinc-400 block text-[10px]">768-dim Embedding</span>
+                  <span className="font-mono text-sm font-bold text-[#ffdb3c]">
                     {latestTelemetry.embedding_ms || 0}ms
                   </span>
                 </div>
-                <div className="p-3 rounded-xl bg-zinc-800/60 border border-zinc-700/50">
-                  <span className="text-zinc-400 block text-[11px]">Neon pgvector Retrieval</span>
-                  <span className="font-mono text-sm font-semibold text-zinc-200">
+                <div className="p-3 rounded-lg bg-[#1f1c0b] border-2 border-black shadow-[2px_2px_0_0_#000]">
+                  <span className="text-zinc-400 block text-[10px]">Neon pgvector Retrieval</span>
+                  <span className="font-mono text-sm font-bold text-[#ffdb3c]">
                     {latestTelemetry.retrieval_ms || 0}ms
                   </span>
                 </div>
-                <div className="p-3 rounded-xl bg-zinc-800/60 border border-zinc-700/50">
-                  <span className="text-zinc-400 block text-[11px]">Qwen 3.6 TTFT</span>
-                  <span className="font-mono text-sm font-semibold text-zinc-200">
+                <div className="p-3 rounded-lg bg-[#1f1c0b] border-2 border-black shadow-[2px_2px_0_0_#000]">
+                  <span className="text-zinc-400 block text-[10px]">Qwen 3.6 TTFT</span>
+                  <span className="font-mono text-sm font-bold text-[#ffdb3c]">
                     {latestTelemetry.ttft_ms || 0}ms
                   </span>
                 </div>
-                <div className="col-span-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                <div className="col-span-2 p-3.5 rounded-lg bg-[#d2691e] border-3 border-black shadow-[3px_3px_0_0_#000] text-black">
                   <div className="flex items-center justify-between">
-                    <span className="text-emerald-400 block text-[11px]">Total Pipeline Latency</span>
-                    <span className="text-[11px] text-emerald-400 font-medium">Under 200ms Target</span>
+                    <span className="text-black font-bold block text-xs">Total Pipeline Latency</span>
+                    <span className="text-[10px] font-bold bg-white text-black px-1.5 py-0.5 rounded border border-black">
+                      Target &lt;200ms PASSED
+                    </span>
                   </div>
-                  <span className="font-mono text-lg font-bold text-emerald-300">
-                    {latestTelemetry.total_ms || 0}ms
+                  <span className="font-['Anton','Anybody',sans-serif] text-2xl font-bold text-black mt-1 block">
+                    {latestTelemetry.total_ms || 0} ms
                   </span>
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-zinc-500 py-8 text-center">
+              <p className="text-xs text-zinc-400 py-8 text-center">
                 Telemetry will appear after your first query or click &apos;Run Live Benchmark Suite&apos; above.
               </p>
             )}
@@ -731,29 +718,29 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
 
       {/* Citation Inspector Modal */}
       {selectedCitation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl bg-zinc-900 border border-zinc-700 p-5 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs font-['Space_Grotesk',sans-serif]">
+          <div className="w-full max-w-lg rounded-xl bg-[#171305] border-4 border-black p-5 shadow-[8px_8px_0_0_#000] space-y-4">
+            <div className="flex items-center justify-between border-b-2 border-black pb-3">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="size-5 text-emerald-400" />
-                <h3 className="font-semibold text-zinc-100 text-sm">Grounded Document Citation</h3>
+                <ShieldCheck className="size-5 text-[#d2691e]" />
+                <h3 className="font-bold text-[#f5f5f0] text-sm uppercase">Grounded Citation</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedCitation(null)}
-                className="text-zinc-400 hover:text-zinc-200 text-sm font-semibold cursor-pointer"
+                className="text-zinc-300 hover:text-white font-bold cursor-pointer"
               >
                 ✕
               </button>
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs text-zinc-400">
-                <span>Cosine Relevance Score</span>
-                <span className="font-mono font-bold text-emerald-400">
+              <div className="flex items-center justify-between text-xs text-zinc-300">
+                <span>Cosine Relevance</span>
+                <span className="font-mono font-bold text-[#ffdb3c]">
                   {(selectedCitation.similarity * 100).toFixed(1)}% Grounded
                 </span>
               </div>
-              <div className="p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-800 font-mono text-xs text-zinc-300 leading-relaxed max-h-60 overflow-y-auto">
+              <div className="p-3.5 rounded bg-[#1f1c0b] border-2 border-black font-mono text-xs text-zinc-200 leading-relaxed max-h-60 overflow-y-auto">
                 {selectedCitation.content}
               </div>
             </div>
@@ -761,7 +748,7 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
               <button
                 type="button"
                 onClick={() => setSelectedCitation(null)}
-                className="px-4 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium cursor-pointer"
+                className="px-4 py-1.5 rounded bg-[#d2691e] hover:bg-[#e91e63] text-black hover:text-white border-2 border-black font-bold text-xs cursor-pointer shadow-[2px_2px_0_0_#000]"
               >
                 Close Inspector
               </button>
@@ -771,7 +758,7 @@ export default function ChatInterface({ hasDocuments }: ChatInterfaceProps) {
       )}
 
       {/* Composer Panel with PromptBar */}
-      <div className="mt-auto shrink-0 p-3 bg-zinc-900/60 border-t border-zinc-800/80">
+      <div className="mt-auto shrink-0 p-3 bg-[#171305] border-t-3 border-black">
         <PromptBar
           placeholder={
             hasDocuments

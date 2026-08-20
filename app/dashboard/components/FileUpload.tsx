@@ -31,7 +31,6 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
   const [selectedStrategy, setSelectedStrategy] = useState<ChunkingStrategy>('auto')
 
   const handleFile = useCallback(async (file: File) => {
-    // Check type or extension
     const isTxtOrMd = file.name.endsWith('.txt') || file.name.endsWith('.md')
     if (!acceptedTypes.includes(file.type) && !isTxtOrMd) {
       setUploadStatus('error')
@@ -63,30 +62,41 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
 
       setProgress(100)
       setUploadStatus('success')
-      setUploadMessage(`"${data.document.name}" indexed with ${data.document.strategy || selectedStrategy} chunking (${data.document.chunks} chunks)`)
-      onUploadComplete(data.document)
+      setUploadMessage(`Indexed ${data.chunks} chunks with strategy [${selectedStrategy.toUpperCase()}]!`)
+      onUploadComplete({
+        id: data.documentId,
+        name: data.name,
+        chunks: data.chunks,
+        strategy: selectedStrategy
+      })
+
+      setTimeout(() => {
+        setUploadStatus('idle')
+        setProgress(0)
+      }, 4000)
     } catch (err: unknown) {
-      setUploadStatus('error')
       const message = err instanceof Error ? err.message : 'Upload failed'
+      setUploadStatus('error')
       setUploadMessage(message)
     } finally {
       setIsUploading(false)
     }
-  }, [onUploadComplete, selectedStrategy])
+  }, [selectedStrategy, onUploadComplete])
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     setIsDragOver(false)
     const file = e.dataTransfer.files?.[0]
     if (file) handleFile(file)
   }, [handleFile])
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     setIsDragOver(true)
   }, [])
 
-  const handleDragLeave = useCallback(() => {
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
     setIsDragOver(false)
   }, [])
 
@@ -96,31 +106,31 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
   }, [handleFile])
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 font-['Space_Grotesk',sans-serif]">
       {/* Chunking Strategy Selector */}
-      <div className="bg-zinc-900/70 border border-zinc-800 rounded-xl p-3 text-xs space-y-1.5">
-        <div className="flex items-center justify-between">
-          <label className="flex items-center gap-1.5 font-medium text-zinc-300">
-            <Layers className="w-3.5 h-3.5 text-emerald-400" />
-            Chunking Strategy:
+      <div className="bg-[#1f1c0b] border-2 border-black rounded-lg p-2.5 text-xs space-y-1.5 shadow-[3px_3px_0_0_#000]">
+        <div className="flex items-center justify-between gap-1">
+          <label className="flex items-center gap-1 font-bold text-[#f5f5f0] text-[11px] uppercase">
+            <Layers className="w-3.5 h-3.5 text-[#d2691e]" />
+            Strategy:
           </label>
           <select
             value={selectedStrategy}
             onChange={(e) => setSelectedStrategy(e.target.value as ChunkingStrategy)}
             disabled={isUploading}
-            className="bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+            className="bg-[#171305] border-2 border-black text-[#ffdb3c] font-bold rounded px-2 py-1 text-[11px] focus:outline-none focus:border-[#e91e63] cursor-pointer"
           >
-            <option value="auto">Auto-Detect Structure</option>
-            <option value="recursive">Recursive Character (500/100)</option>
-            <option value="semantic">Semantic Sentence Similarity</option>
-            <option value="markdown">Markdown &amp; Header-Aware</option>
+            <option value="auto">Auto-Detect</option>
+            <option value="recursive">Recursive (500/100)</option>
+            <option value="semantic">Semantic Shift</option>
+            <option value="markdown">Markdown Headers</option>
           </select>
         </div>
-        <p className="text-[11px] text-zinc-500">
-          {selectedStrategy === 'auto' && 'Automatically picks optimal chunker based on file format & headers.'}
-          {selectedStrategy === 'recursive' && 'Hierarchically splits text on paragraphs, sentences, and words.'}
-          {selectedStrategy === 'semantic' && 'Detects semantic topic shifts using sentence similarity analysis.'}
-          {selectedStrategy === 'markdown' && 'Preserves heading breadcrumbs and section hierarchies.'}
+        <p className="text-[10px] text-zinc-400 font-['Be_Vietnam_Pro',sans-serif]">
+          {selectedStrategy === 'auto' && 'Picks optimal chunker based on file format & headers.'}
+          {selectedStrategy === 'recursive' && 'Hierarchically splits text on paragraphs and sentences.'}
+          {selectedStrategy === 'semantic' && 'Detects semantic topic shifts via sentence embeddings.'}
+          {selectedStrategy === 'markdown' && 'Preserves heading breadcrumbs and document structure.'}
         </p>
       </div>
 
@@ -130,11 +140,11 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         className={`
-          relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer
-          transition-all duration-200 ease-in-out
+          relative border-3 border-dashed rounded-lg p-5 text-center cursor-pointer
+          transition-all duration-200 ease-in-out bg-[#1f1c0b]
           ${isDragOver
-            ? 'border-emerald-400 bg-emerald-500/10 scale-[1.02]'
-            : 'border-zinc-700 hover:border-zinc-500 hover:bg-zinc-800/50'
+            ? 'border-[#e91e63] bg-[#e91e63]/15 scale-[1.02] shadow-[4px_4px_0_0_#000]'
+            : 'border-black hover:border-[#d2691e] hover:bg-[#1f1c0b]/80 shadow-[3px_3px_0_0_#000]'
           }
           ${isUploading ? 'pointer-events-none opacity-70' : ''}
         `}
@@ -147,33 +157,35 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
           disabled={isUploading}
         />
         {isUploading ? (
-          <div className="flex flex-col items-center gap-2 py-2">
-            <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
-            <p className="text-sm text-zinc-400">Processing &amp; embedding chunks...</p>
-            <div className="w-full bg-zinc-700 rounded-full h-1.5 mt-1">
+          <div className="flex flex-col items-center gap-2 py-1">
+            <Loader2 className="w-6 h-6 text-[#d2691e] animate-spin" />
+            <p className="text-xs text-zinc-200 font-bold">Chunking &amp; pgvector indexing...</p>
+            <div className="w-full bg-black rounded-full h-2 mt-1 border border-zinc-700">
               <div
-                className="bg-emerald-400 h-1.5 rounded-full transition-all duration-500"
+                className="bg-[#d2691e] h-2 rounded-full transition-all duration-500"
                 style={{ width: `${progress}%` }}
               />
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2 py-2">
-            <Upload className="w-8 h-8 text-zinc-500" />
-            <p className="text-sm text-zinc-400">
-              Drop file here or <span className="text-emerald-400 font-medium">browse</span>
+          <div className="flex flex-col items-center gap-1.5 py-1">
+            <div className="w-8 h-8 rounded-full bg-[#d2691e] border-2 border-black flex items-center justify-center text-black font-bold shadow-[2px_2px_0_0_#000]">
+              <Upload className="w-4 h-4" />
+            </div>
+            <p className="text-xs text-[#f5f5f0] font-bold">
+              Drop file here or <span className="text-[#ffdb3c] underline">browse</span>
             </p>
-            <p className="text-xs text-zinc-600">PDF, DOCX, TXT, MD supported</p>
+            <p className="text-[10px] text-zinc-400">PDF, DOCX, TXT, MD supported</p>
           </div>
         )}
       </div>
 
       {uploadStatus !== 'idle' && (
         <div
-          className={`flex items-start gap-2 text-sm rounded-lg p-3 ${
+          className={`flex items-start gap-2 text-xs rounded-lg p-2.5 border-2 border-black shadow-[2px_2px_0_0_#000] font-bold ${
             uploadStatus === 'success'
-              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-              : 'bg-red-500/10 text-red-400 border border-red-500/20'
+              ? 'bg-[#d2691e] text-black'
+              : 'bg-[#e91e63] text-white'
           }`}
         >
           {uploadStatus === 'success' ? (
