@@ -20,25 +20,27 @@ export async function createDocumentRecord(params: {
   name: string
   type?: string
   size?: number
-}): Promise<{ id: string; user_id: string; name: string; created_at: string }> {
+}): Promise<{ id: string; user_id: string; name: string; type: string; size: number; created_at: string }> {
   const sql = getDb()
   const docId = params.id || undefined
+  const docType = params.type || 'text/plain'
+  const docSize = params.size || 0
 
   if (docId) {
     const rows = await sql`
-      INSERT INTO documents (id, user_id, name)
-      VALUES (${docId}, ${params.userId}, ${params.name})
-      RETURNING id, user_id, name, created_at;
+      INSERT INTO documents (id, user_id, name, type, size)
+      VALUES (${docId}, ${params.userId}, ${params.name}, ${docType}, ${docSize})
+      RETURNING id, user_id, name, type, size, created_at;
     `
-    return rows[0] as unknown as { id: string; user_id: string; name: string; created_at: string }
+    return rows[0] as unknown as { id: string; user_id: string; name: string; type: string; size: number; created_at: string }
   }
 
   const rows = await sql`
-    INSERT INTO documents (user_id, name)
-    VALUES (${params.userId}, ${params.name})
-    RETURNING id, user_id, name, created_at;
+    INSERT INTO documents (user_id, name, type, size)
+    VALUES (${params.userId}, ${params.name}, ${docType}, ${docSize})
+    RETURNING id, user_id, name, type, size, created_at;
   `
-  return rows[0] as unknown as { id: string; user_id: string; name: string; created_at: string }
+  return rows[0] as unknown as { id: string; user_id: string; name: string; type: string; size: number; created_at: string }
 }
 
 export const insertDocument = createDocumentRecord
