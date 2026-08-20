@@ -361,11 +361,11 @@ export default function Home() {
             <Link className="hover:text-[#ffdb3c] transition-colors" href="/dashboard">
               Launch Studio
             </Link>
-            <Link className="hover:text-[#ffdb3c] transition-colors" href="https://github.com/ajiteshvish/HHGOA_RAG" target="_blank">
-              GitHub Repo
+            <Link className="hover:text-[#ffdb3c] transition-colors" href="#benchmarks">
+              Telemetry
             </Link>
             <Link className="hover:text-[#ffdb3c] transition-colors" href="https://huggingface.co/datasets/ai4bharat/MSMARCO-XI" target="_blank">
-              MSMARCO-XI
+              MSMARCO-XI Dataset
             </Link>
             <Link className="hover:text-[#ffdb3c] transition-colors" href="/login">
               Login
